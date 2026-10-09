@@ -107,7 +107,6 @@ function AccountPage({ mode }) {
   return (
     <section>
       <h2>{registering ? "Register" : "Login"}</h2>
-      <p>This is a page template. Account handling is not connected yet.</p>
       <form>
         {registering && (
           <label>
