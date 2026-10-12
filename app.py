@@ -1,6 +1,20 @@
+import os
+
+from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template
 
+from extensions import db, migrate
+import models  # noqa: F401 - registers the models with SQLAlchemy migrations
+
+load_dotenv()
+
 app = Flask(__name__)
+app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv(
+    "DATABASE_URL", "sqlite:///crypt.db"
+)
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+db.init_app(app)
+migrate.init_app(app, db)
 
 @app.get("/api/friends")
 def api_friends():
