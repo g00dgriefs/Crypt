@@ -37,7 +37,7 @@ export default function App() {
   }, []);
 
   return (
-    <div className="page">
+    <div className="home-page">
       <header>
         <h1>Crypt</h1>
         <nav aria-label="Main navigation">
