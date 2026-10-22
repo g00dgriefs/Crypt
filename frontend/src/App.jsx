@@ -119,13 +119,6 @@ function Messages({ friends, messages }) {
      </div>
    );
       
-
-
-
-    
-  
-      
-  );
 }
 
 function AccountPage({ mode }) {
