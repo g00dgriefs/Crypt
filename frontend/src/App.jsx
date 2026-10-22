@@ -50,7 +50,7 @@ export default function App() {
 
       <main>
         {page === "home" && <Home friends={friends} />}
-        {page === "messages" && <Messages messages={messages} />}
+        {page === "messages" && <Messages friends={friends} messages={messages} />}
         {page === "login" && <AccountPage mode="login" />}
         {page === "register" && <AccountPage mode="register" />}
         {!['home', 'messages', 'login', 'register'].includes(page) && (
@@ -83,22 +83,48 @@ function Home({ friends }) {
   );
 }
 
-function Messages({ messages }) {
+function Messages({ friends, messages }) {
+
+  const [friend, setFriend] =useState(null);
+  const [message, setMessage] = useState("");
+
+  function Send(event) {
+    event.preventDefault()
+  
+
+  if (!message.trim() !friend) return;
+ // Still need to connect Flask Backend to send and recieve messages
+  }
+
+  
   return (
-    <section>
-      <h2>Messages</h2>
-      {messages.length ? (
-        <ul>
-          {messages.map((message, index) => (
-            <li key={index}>
-              <strong>{message.sender}:</strong> {message.text}
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p>No messages yet.</p>
-      )}
-    </section>
+    <div className="messages-page">
+      <aside className="friendslist">
+        <h3>Friends</h3>
+
+        {friends.length === 0 ? ( 
+          <p>No Friends Available</p>)
+          : (
+            friends.map((person) => (
+              <button
+                key={person.id}
+                type="button"
+                className={'friend-selected'}
+                >
+                {person.username}
+              </button>
+            ))
+          )}
+       </aside>
+     </div>
+   );
+      
+
+
+
+    
+  
+      
   );
 }
 

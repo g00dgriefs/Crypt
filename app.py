@@ -5,6 +5,7 @@ from flask import Flask, jsonify, render_template, send_from_directory
 
 
 from extensions import db, migrate
+from models import User, Message
 import models  # noqa: F401 - registers the models with SQLAlchemy migrations
 
 load_dotenv()
@@ -28,7 +29,31 @@ def api_friends():
 
 @app.get("/api/messages")
 def api_messages():
-    return jsonify([])
+    user_id= session.get(user_id)
+
+    if not user_id:
+        return jsonify([])
+    
+    send_to = db.session.query(Message.recipient_id).filter(
+        Message.sender_id == user_id
+    )
+
+    received_from = db.session.query(Message.sender_id).filter(
+        Message.recipient_id == user_id
+    )
+
+    friends_ids = sent_to.union(received_from).subquery()
+
+    
+    friends = User.query.filter(
+        User.id.in_(db.session.query(friend_ids.c[0]))
+    ).all()
+
+    return jsonify([
+        {"id": friend.id, "username": friend.username}
+        for friend in friends
+    ])
+
 
 
 @app.get("/")
