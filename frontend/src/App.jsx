@@ -92,7 +92,7 @@ function Messages({ friends, messages }) {
     event.preventDefault()
   
 
-  if (!message.trim() !friend) return;
+  if (!message.trim() || !friend) return;
  // Still need to connect Flask Backend to send and recieve messages
   }
 
