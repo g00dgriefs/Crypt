@@ -37,7 +37,7 @@ export default function App() {
   }, []);
 
   return (
-    <div className="page">
+    <div className="app">
       <header>
         <h1>Crypt</h1>
         <nav aria-label="Main navigation">
@@ -49,8 +49,8 @@ export default function App() {
       </header>
 
       <main>
-        {page === "home" && <Home friends={friends} />}
-        {page === "messages" && <Messages messages={messages} />}
+        {page === "home" && (<div className="home-page"> <Home friends={friends} /> </div>)}
+        {page === "messages" && <Messages friends={friends} messages={messages} />}
         {page === "login" && <AccountPage mode="login" />}
         {page === "register" && <AccountPage mode="register" />}
         {!['home', 'messages', 'login', 'register'].includes(page) && (
@@ -64,42 +64,58 @@ export default function App() {
   );
 }
 
-function Home({ friends }) {
+
+function Home() {
   return (
-    <section>
-      <h2>Friends</h2>
-      {friends.length ? (
-        <ul>
-          {friends.map((friend) => (
-            <li key={friend.id}>
-              <a href="#/messages">{friend.name}</a> - {friend.status}
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p>No friends yet.</p>
-      )}
-    </section>
+    <>
+      <h1>CRYPT</h1>
+      <p>Secure connections are our priority</p>
+
+      <div className="home-buttons">
+        <a href="#/login">Login</a>
+        <a href="#/register">Register</a>
+      </div>
+    </>
   );
 }
 
-function Messages({ messages }) {
+
+function Messages({ friends, messages }) {
+
+  const [friend, setFriend] =useState(null);
+  const [message, setMessage] = useState("");
+
+  function Send(event) {
+    event.preventDefault()
+  
+
+  if (!message.trim() || !friend) return;
+ // Still need to connect Flask Backend to send and recieve messages
+  }
+
+  
   return (
-    <section>
-      <h2>Messages</h2>
-      {messages.length ? (
-        <ul>
-          {messages.map((message, index) => (
-            <li key={index}>
-              <strong>{message.sender}:</strong> {message.text}
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p>No messages yet.</p>
-      )}
-    </section>
-  );
+    <div className="messages-page">
+      <aside className="friendslist">
+        <h3>Friends</h3>
+
+        {friends.length === 0 ? ( 
+          <p>No Friends Available</p>)
+          : (
+            friends.map((person) => (
+              <button
+                key={person.id}
+                type="button"
+                className={'friend-selected'}
+                >
+                {person.username}
+              </button>
+            ))
+          )}
+       </aside>
+     </div>
+   );
+      
 }
 
 function AccountPage({ mode }) {

@@ -4,8 +4,25 @@
   background: #f5f5f5;
 }
 
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+}
+
 body {
   margin: 0;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  background: #000;
 }
 
 .page {
@@ -36,9 +53,24 @@ nav {
   gap: 1rem;
 }
 
-a {
-  color: #174ea6;
+.app > header {
+  flex: 0 0 auto;
+  margin: 0;
+  color: #fff;
+  background: #000;
+  border: 0;
+  border-radius: 0;
 }
+
+.app > header nav a {
+  color: #fff;
+}
+
+.app > main {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
 
 label {
   display: block;
@@ -52,4 +84,70 @@ input {
   box-sizing: border-box;
   margin-top: 0.35rem;
   padding: 0.5rem;
+}
+
+/*Crypt Home Page */
+.home-page{ 
+  height: 100%;
+  box-sizing: border-box;
+  display:flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  background: #000;
+  color: #fff;
+  border-radius: 0;
+  padding: 1.5rem;
+  box-sizing: border-box;
+}
+
+.home-page h1{
+  font-size: 5rem;
+  letter-spacing: 5px;
+  margin: 0 0 10px;
+}
+
+.home-page p {
+  color: #aaa;
+  font-size: 1rem;
+  margin-bottom: 2.5rem;
+}
+
+.home-buttons {
+  display: flex;
+  gap: 2rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.home-buttons a {
+  padding: 10px 28px;
+  border: 1.5px solid #ff00aa;
+  border-radius: 8px;
+  color: white;
+  text-decoration: none;
+  transition: all 0.25s ease;
+}
+
+.home-buttons a:hover {
+  background: #ff00aa;
+  box-shadow: 0 0 18px #ff00aa;
+  transform: translateY(-3px);
+}
+
+
+/*Crypt Messaging Page */
+
+.messages-page {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  box-sizing: border-box;
+  background-color: #000;
+  color: white;
+  border: 0;
+  border-radius: 0;
+  overflow: hidden;
 }
