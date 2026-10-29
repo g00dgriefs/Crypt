@@ -151,3 +151,139 @@ input {
   border-radius: 0;
   overflow: hidden;
 }
+
+.friendslist {
+  width: 25%;
+  min-width: 180px;
+  padding: 15px;
+  background:#000;
+  border-right: 1px solid #ff00aa;
+  overflow-y: auto;
+}
+
+.friendslist h3 {
+margin-top: 0%;
+}
+
+.friendslist button {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 6px;
+  background-color: #333;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.friendslist button:hover{
+  background-color: #ff00aa;
+}
+
+.friendslist .friend-selected{
+  background-color: #e5bbe1;
+}
+
+/* Message Window */
+
+.message-window {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  background-color: #000;
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid #000;
+}
+
+.chat-header h3{
+  margin: 0 0 3px;
+}
+
+.chat-header p{
+  margin: 0;
+  color: #ffffff;
+  font-size: 10px;
+}
+
+.chat-status{
+  color: #ffffff;
+  font-size: 15px;
+}
+
+.chat-messages {
+  flex: 2;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 24px;
+}
+
+.messaging-bubble{
+  max-width: 50%;
+  width: fit-content;
+  padding: 12px 15px;
+  border-radius: 14px;
+  background-color: #000;
+  color: #ff00aa;
+  overflow-wrap: anywhere;
+  align-self: flex-start;
+}
+
+.message-form {
+  display: flex;
+  gap: 12px;
+  padding: 16px 20px;
+  border-top: 1px solid #000;
+}
+
+.message-form input{
+  flex: 1;
+  min-width: 0;
+  padding: 12px 15px;
+  border-radius: 20px;
+  border: 1px solid #000;
+  background-color: #000;
+  color: #ff00aa;
+  outline: none;
+
+}
+
+.message-form button{
+  padding: 12px 20px;
+  border: none;
+  border-radius: 20px;
+  background-color: #000;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.messsage-form button:hover{
+  background-color: #ff00aa;
+}
+
+.empty-chat{ 
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #000;
+  text-align: center;
+  padding: 18px;
+}
+
+.empty-chat h2{
+  color: white;
+}

@@ -93,29 +93,81 @@ function Messages({ friends, messages }) {
  // Still need to connect Flask Backend to send and recieve messages
   }
 
-  
-  return (
-    <div className="messages-page">
-      <aside className="friendslist">
-        <h3>Friends</h3>
+  const friendMessages = messages.filter(
+    (msg) =>
+      msg.sender_id === friend?.id ||
+      msg.recipient_id === friend?.id
+  );
 
-        {friends.length === 0 ? ( 
-          <p>No Friends Available</p>)
-          : (
-            friends.map((person) => (
-              <button
-                key={person.id}
-                type="button"
-                className={'friend-selected'}
-                >
-                {person.username}
-              </button>
-            ))
-          )}
-       </aside>
-     </div>
-   );
-      
+
+  
+  
+return (
+  <div className="messages-page">
+    <aside className="friendslist">
+      <h3>Friends</h3>
+
+      {friends.length === 0 ? (
+        <p>No Friends Available</p>
+      ) : (
+        friends.map((person) => (
+          <button
+            key={person.id}
+            type="button"
+            className={
+              friend?.id === person.id ? "friend-selected" : ""
+            }
+            onClick={() => setFriend(person)}
+          >
+            {person.username}
+          </button>
+        ))
+      )}
+    </aside>
+
+    <section className="message-window">
+      {friend ? (
+        <>
+          <header className="chat-header">
+            <div>
+              <h3>{friend.username}</h3>
+              <p>Conversation</p>
+            </div>
+
+            <span className="chat-status">Crypt</span>
+          </header>
+
+          <div className="chat-messages">
+            {friendMessages.map((msg) => (
+              <div
+                key={msg.id}
+                className="messaging-bubble"
+              >
+                {msg.content}
+              </div>
+            ))}
+          </div>
+
+          <form className="message-form" onSubmit={Send}>
+            <input
+              type="text"
+              placeholder="Write a message..."
+              value={message}
+              onChange={(event) => setMessage(event.target.value)}
+            />
+
+            <button type="submit">Send</button>
+          </form>
+        </>
+      ) : (
+        <div className="empty-chat">
+          <h2>Crypt</h2>
+          
+        </div>
+      )}
+    </section>
+  </div>
+);
 }
 
 function AccountPage({ mode }) {
