@@ -16,7 +16,7 @@ def friends():
     user = current_user()
     if user is None:
         return api_error("Login required", 401)
-    # There is no separate friend-request model yet; all registered users are contacts.
+    # all registered users are considered friends fix later ^-^
     contacts = User.query.filter(User.id != user.id).order_by(User.username).all()
     return jsonify([user_json(contact) for contact in contacts])
 

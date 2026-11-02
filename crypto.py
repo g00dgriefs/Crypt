@@ -1,7 +1,7 @@
 """Password hashing and end-to-end message encryption using libsodium via PyNaCl.
 
 Message encryption uses each sender's private key and the recipient's public key.
-Keep private keys on user devices; do not send them to or store them on the server.
+Keep private keys on user devices and do not send them to or store them on the server.
 """
 
 import base64
@@ -14,8 +14,7 @@ from nacl.public import Box, PrivateKey, PublicKey
 def generate_box_keypair() -> tuple[bytes, bytes]:
     """Generate a NaCl Box keypair for local/device-side use.
 
-    Call this on a user device and keep the private key there. Do not expose a
-    private key through a Flask endpoint or persist it in the server database.
+    !!!!call this on a user device and keep the private key there. dont send private key through flask endpoint
     """
     private_key = PrivateKey.generate()
     return bytes(private_key), bytes(private_key.public_key)
@@ -27,7 +26,7 @@ def hash_password(password: str) -> str:
 
 
 def verify_password(password: str, encoded_hash: str) -> bool:
-    """Verify a password hash without raising on an invalid or malformed hash."""
+    """cerify a password hash without raising on an invalid or malformed hash."""
     try:
         return argon2id.verify(encoded_hash.encode("ascii"), password.encode("utf-8"))
     except (exceptions.InvalidkeyError, UnicodeEncodeError, ValueError):
@@ -37,7 +36,7 @@ def verify_password(password: str, encoded_hash: str) -> bool:
 def encrypt_for_recipient(
     plaintext: str, sender_private_key: bytes, recipient_public_key: bytes
 ) -> bytes:
-    """Encrypt text for a recipient; the returned bytes include the random nonce."""
+    """Encrypt text for a recipient"""
     box = Box(PrivateKey(sender_private_key), PublicKey(recipient_public_key))
     encrypted = box.encrypt(plaintext.encode("utf-8"))
     return bytes(encrypted)
@@ -46,7 +45,7 @@ def encrypt_for_recipient(
 def decrypt_from_sender(
     encrypted_payload: bytes, sender_public_key: bytes, recipient_private_key: bytes
 ) -> str:
-    """Decrypt a stored Box payload using the recipient's private key."""
+    """Decrypt a stored payload with the recipient's private key."""
     box = Box(PrivateKey(recipient_private_key), PublicKey(sender_public_key))
     return box.decrypt(encrypted_payload).decode("utf-8")
 
