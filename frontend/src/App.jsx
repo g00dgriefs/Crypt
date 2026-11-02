@@ -34,7 +34,8 @@ async function decryptRows(rows, user, contacts, keypair) {
         content: await decryptText(
           row.encrypted_payload,
           sender.public_key,
-          keypair.privateKey
+          keypair.privateKey,
+          row.sender_id === user.id
         ),
       };
     } catch {

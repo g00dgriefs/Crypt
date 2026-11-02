@@ -136,9 +136,28 @@ export async function createOrUnlockDeviceKeys(user, password) {
 
 export async function encryptText(plaintext, recipientPublicKey, senderPrivateKey) {
   await sodium.ready;
+  const message = sodium.from_string(plaintext);
+  const senderPublicKey = sodium.crypto_scalarmult_base(senderPrivateKey);
+  const recipientCopy = encryptBoxPayload(message, recipientPublicKey, senderPrivateKey);
+  const senderCopy = encryptBoxPayload(message, toBase64(senderPublicKey), senderPrivateKey);
+
+  // Store two independently encrypted Box payloads: one for the recipient and
+  // one for the sender, so both can decrypt after reloading their message list.
+  const header = new Uint8Array([67, 82, 89, 80, 84, 1]); // "CRYPT", version 1
+  const length = new Uint8Array(4);
+  new DataView(length.buffer).setUint32(0, recipientCopy.length);
+  const envelope = new Uint8Array(header.length + length.length + recipientCopy.length + senderCopy.length);
+  envelope.set(header, 0);
+  envelope.set(length, header.length);
+  envelope.set(recipientCopy, header.length + length.length);
+  envelope.set(senderCopy, header.length + length.length + recipientCopy.length);
+  return toBase64(envelope);
+}
+
+function encryptBoxPayload(message, recipientPublicKey, senderPrivateKey) {
   const nonce = sodium.randombytes_buf(sodium.crypto_box_NONCEBYTES);
   const ciphertext = sodium.crypto_box_easy(
-    sodium.from_string(plaintext),
+    message,
     nonce,
     fromBase64(recipientPublicKey),
     senderPrivateKey
@@ -146,12 +165,24 @@ export async function encryptText(plaintext, recipientPublicKey, senderPrivateKe
   const payload = new Uint8Array(nonce.length + ciphertext.length);
   payload.set(nonce);
   payload.set(ciphertext, nonce.length);
-  return toBase64(payload);
+  return payload;
 }
 
-export async function decryptText(encodedPayload, senderPublicKey, recipientPrivateKey) {
+export async function decryptText(encodedPayload, senderPublicKey, recipientPrivateKey, isSender = false) {
   await sodium.ready;
-  const payload = fromBase64(encodedPayload);
+  let payload = fromBase64(encodedPayload);
+  const magic = [67, 82, 89, 80, 84, 1];
+  const isEnvelope = magic.every((byte, index) => payload[index] === byte);
+  if (isEnvelope) {
+    if (payload.length < 10) throw new Error("Encrypted message is incomplete.");
+    const recipientLength = new DataView(payload.buffer, payload.byteOffset, payload.byteLength).getUint32(6);
+    const recipientStart = 10;
+    const senderStart = recipientStart + recipientLength;
+    if (senderStart > payload.length) throw new Error("Encrypted message is incomplete.");
+    payload = isSender
+      ? payload.subarray(senderStart)
+      : payload.subarray(recipientStart, senderStart);
+  }
   if (payload.length < sodium.crypto_box_NONCEBYTES + sodium.crypto_box_MACBYTES) {
     throw new Error("Encrypted message is incomplete.");
   }
