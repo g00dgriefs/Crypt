@@ -151,3 +151,174 @@ input {
   border-radius: 0;
   overflow: hidden;
 }
+
+.messages-page .friendslist {
+  flex: 0 0 240px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  padding: 1rem;
+  color: #222;
+  background: #f3f4f6;
+  border-right: 1px solid #d7dbe0;
+}
+
+.friendslist h3 {
+  margin: 0 0 1rem;
+}
+
+.friendslist button {
+  display: block;
+  width: 100%;
+  margin: 0.35rem 0;
+  padding: 0.7rem;
+  color: #202632;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.friendslist button:hover,
+.friendslist button.friend-selected {
+  background: #dce8f8;
+}
+
+.messages-page .message-window {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  color: #202632;
+  background: #fff;
+  border: 0;
+  border-radius: 0;
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0;
+  padding: 1rem 1.25rem;
+  color: #202632;
+  background: #fff;
+  border: 0;
+  border-bottom: 1px solid #e5e7eb;
+  border-radius: 0;
+}
+
+.chat-header h3,
+.chat-header p {
+  margin: 0;
+}
+
+.chat-header p {
+  margin-top: 0.3rem;
+  color: #667085;
+  font-size: 0.9rem;
+}
+
+.chat-status {
+  color: #287348;
+  font-size: 0.85rem;
+}
+
+.chat-messages {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.9rem;
+  overflow-y: auto;
+  padding: 1.25rem;
+  background: #f8fafc;
+}
+
+.message-row {
+  max-width: min(75%, 560px);
+}
+
+.message-own {
+  align-self: flex-end;
+}
+
+.message-theirs {
+  align-self: flex-start;
+}
+
+.message-sender {
+  margin: 0 0 0.25rem 0.2rem;
+  color: #596579;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.messaging-bubble {
+  padding: 0.7rem 0.9rem;
+  color: #202632;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  background: #e7ebf0;
+  border-radius: 12px;
+}
+
+.message-own .messaging-bubble {
+  color: #fff;
+  background: #315f9c;
+}
+
+.message-form {
+  display: flex;
+  gap: 0.65rem;
+  padding: 0.9rem 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.message-form input {
+  flex: 1 1 auto;
+  width: auto;
+  max-width: none;
+  margin: 0;
+  color: #202632;
+  background: #fff;
+  border: 1px solid #cbd2dc;
+  border-radius: 6px;
+}
+
+.message-form button {
+  padding: 0.5rem 1rem;
+  color: #fff;
+  background: #315f9c;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.message-form button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.empty-chat {
+  margin: auto;
+  color: #596579;
+  text-align: center;
+}
+
+@media (max-width: 600px) {
+  .messages-page .friendslist {
+    flex-basis: 135px;
+    padding: 0.65rem;
+  }
+
+  .chat-messages {
+    padding: 0.9rem;
+  }
+
+  .message-row {
+    max-width: 90%;
+  }
+}

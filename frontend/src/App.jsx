@@ -162,6 +162,7 @@ export default function App() {
           : !keypair
             ? <UnlockKey onUnlock={unlockKey} error={keyError} />
             : <Messages
+                user={user}
                 friends={friends}
                 messages={messages}
                 setMessages={setMessages}
@@ -221,7 +222,7 @@ function UnlockKey({ onUnlock, error }) {
   </section>;
 }
 
-function Messages({ friends, messages, setMessages, keypair, loadError }) {
+function Messages({ user, friends, messages, setMessages, keypair, loadError }) {
   const [friendId, setFriendId] = useState(null);
   const friend = friends.find((contact) => contact.id === friendId) || null;
   const [message, setMessage] = useState("");
@@ -289,7 +290,15 @@ function Messages({ friends, messages, setMessages, keypair, loadError }) {
         </header>
         <div className="chat-messages">
           {conversation.map((item) => (
-            <div key={item.id} className="messaging-bubble">{item.content}</div>
+            <div
+              key={item.id}
+              className={`message-row ${item.sender_id === user.id ? "message-own" : "message-theirs"}`}
+            >
+              <div className="message-sender">
+                {item.sender_id === user.id ? user.username : friend.username}
+              </div>
+              <div className="messaging-bubble">{item.content}</div>
+            </div>
           ))}
         </div>
         {sendError && <p role="alert">{sendError}</p>}
