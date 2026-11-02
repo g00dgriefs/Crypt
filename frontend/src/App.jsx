@@ -67,8 +67,10 @@ export default function App() {
       .then(({ user: currentUser }) => {
         if (active) {
           setUser(currentUser);
-          setPage("messages");
-          window.location.hash = "/messages";
+          if (!window.location.hash || currentPage() === "home") {
+            setPage("messages");
+            window.location.hash = "/messages";
+          }
         }
       })
       .catch(() => { if (active) setUser(null); })
@@ -150,6 +152,7 @@ export default function App() {
       <nav aria-label="Main navigation">
         <a href="#/home">Home</a>
         <a href="#/messages">Messages</a>
+        <a href="#/settings">Settings</a>
         {!user && <><a href="#/login">Login</a><a href="#/register">Register</a></>}
         {user && <button type="button" onClick={logout}>Logout</button>}
       </nav>
@@ -173,11 +176,27 @@ export default function App() {
       )}
       {page === "login" && <AccountPage mode="login" onAuthenticated={finishSignIn} />}
       {page === "register" && <AccountPage mode="register" onAuthenticated={finishSignIn} />}
-      {!['home', 'messages', 'login', 'register'].includes(page) && (
+      {page === "settings" && <SettingsPage />}
+      {!['home', 'messages', 'login', 'register', 'settings'].includes(page) && (
         <section><h2>Page not found</h2><p>Choose a page from the navigation above.</p></section>
       )}
     </main>
   </div>;
+}
+
+function SettingsPage() {
+  const categories = ["Profile", "Account", "Privacy", "Voice and Video", "Appearance", "Accessibility"];
+
+  return <section className="page settings-page">
+    <h2>Settings</h2>
+    <div className="settings-categories">
+      {categories.map((category) => (
+        <div className="settings-category" key={category}>
+          <h3>{category}</h3>
+        </div>
+      ))}
+    </div>
+  </section>;
 }
 
 function Home() {
@@ -286,8 +305,7 @@ function Messages({ user, friends, messages, setMessages, keypair, loadError }) 
     <section className="message-window">
       {friend ? <>
         <header className="chat-header">
-          <div><h3>{friend.username}</h3><p>End-to-end encrypted conversation</p></div>
-          <span className="chat-status">Crypt</span>
+          <div><h3>{friend.username}</h3></div>
         </header>
         <div className="chat-messages">
           {conversation.map((item) => (
@@ -315,7 +333,7 @@ function Messages({ user, friends, messages, setMessages, keypair, loadError }) 
             {sending ? "Sending..." : "Send"}
           </button>
         </form>
-      </> : <div className="empty-chat"><h2>Crypt</h2><p>Select a contact to start a conversation.</p></div>}
+      </> : <div className="empty-chat"><p>Select a contact to start a conversation.</p></div>}
     </section>
   </div>;
 }
