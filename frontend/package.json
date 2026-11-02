@@ -8,6 +8,7 @@
     "build": "vite build"
   },
   "dependencies": {
+    "libsodium-wrappers-sumo": "^0.8.4",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },
