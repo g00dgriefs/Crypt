@@ -11,6 +11,16 @@ from nacl.pwhash import argon2id
 from nacl.public import Box, PrivateKey, PublicKey
 
 
+def generate_box_keypair() -> tuple[bytes, bytes]:
+    """Generate a NaCl Box keypair for local/device-side use.
+
+    Call this on a user device and keep the private key there. Do not expose a
+    private key through a Flask endpoint or persist it in the server database.
+    """
+    private_key = PrivateKey.generate()
+    return bytes(private_key), bytes(private_key.public_key)
+
+
 def hash_password(password: str) -> str:
     """Return an Argon2id hash suitable for storing in the users table."""
     return argon2id.str(password.encode("utf-8")).decode("ascii")
