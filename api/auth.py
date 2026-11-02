@@ -22,8 +22,8 @@ def register():
         data.get("email"),
         data.get("password"),
     )
-    if not isinstance(username, str) or not username.strip() or len(username.strip()) > 32:
-        return api_error("Username is required and must be at most 32 characters", 400)
+    if not isinstance(username, str) or not username.strip() or len(username.strip()) > 16:
+        return api_error("Username is required and must be at most 16 characters", 400)
     if not isinstance(email, str) or "@" not in email or len(email.strip()) > 255:
         return api_error("A valid email is required", 400)
     if not isinstance(password, str) or len(password) < 8:
@@ -40,6 +40,7 @@ def register():
     except IntegrityError:
         db.session.rollback()
         return api_error("Username or email is already registered", 409)
+    
     session.clear()
     session["user_id"] = user.id
     return jsonify({"user": user_json(user)}), 201
