@@ -3,7 +3,7 @@ from flask import Flask, render_template, send_from_directory
 from api import api_blueprint
 from config import CONFIGS, DevelopmentConfig
 from extensions import cors, db, migrate
-import models  # noqa: F401 - registers models with SQLAlchemy migrations
+import models 
 
 
 def create_app(config_object=None):
