@@ -6,7 +6,7 @@ from sqlalchemy import or_
 from api.helpers import api_error, current_user, user_json
 from crypto import decode_payload, encode_payload
 from extensions import db
-from models import Message, User
+from models import FriendRequest, Message, User
 
 messages_blueprint = Blueprint("messages_api", __name__)
 
@@ -16,9 +16,87 @@ def friends():
     user = current_user()
     if user is None:
         return api_error("Login required", 401)
-    # all registered users are considered friends fix later ^-^
-    contacts = User.query.filter(User.id != user.id).order_by(User.username).all()
+    accepted = FriendRequest.query.filter(
+        FriendRequest.status == "accepted",
+        or_(FriendRequest.requester_id == user.id, FriendRequest.addressee_id == user.id),
+    ).all()
+    friend_ids = {
+        row.addressee_id if row.requester_id == user.id else row.requester_id
+        for row in accepted
+    }
+    contacts = User.query.filter(User.id.in_(friend_ids)).order_by(User.username).all() if friend_ids else []
     return jsonify([user_json(contact) for contact in contacts])
+
+
+@messages_blueprint.get("/friend-requests")
+def friend_requests():
+    user = current_user()
+    if user is None:
+        return api_error("Login required", 401)
+    incoming = FriendRequest.query.filter_by(addressee_id=user.id, status="pending").all()
+    outgoing = FriendRequest.query.filter_by(requester_id=user.id, status="pending").all()
+    return jsonify({
+        "incoming": [friend_request_json(row, row.requester) for row in incoming],
+        "outgoing": [friend_request_json(row, row.addressee) for row in outgoing],
+    })
+
+
+@messages_blueprint.post("/friend-requests")
+def create_friend_request():
+    user = current_user()
+    if user is None:
+        return api_error("Login required", 401)
+    data = request.get_json(silent=True)
+    username = data.get("username") if isinstance(data, dict) else None
+    if not isinstance(username, str) or not username.strip():
+        return api_error("username is required", 400)
+    target = User.query.filter(db.func.lower(User.username) == username.strip().lower()).first()
+    if target is None:
+        return api_error("User not found", 404)
+    if target.id == user.id:
+        return api_error("Cannot add yourself", 400)
+    existing = FriendRequest.query.filter(
+        or_(
+            (FriendRequest.requester_id == user.id) & (FriendRequest.addressee_id == target.id),
+            (FriendRequest.requester_id == target.id) & (FriendRequest.addressee_id == user.id),
+        )
+    ).all()
+    if any(row.status == "accepted" for row in existing):
+        return api_error("You are already friends", 409)
+    if any(row.requester_id == user.id and row.status == "pending" for row in existing):
+        return api_error("Friend request already sent", 409)
+    if any(row.requester_id == target.id and row.status == "pending" for row in existing):
+        return api_error("This user has already sent you a request. Accept it from incoming requests.", 409)
+    row = next((item for item in existing if item.requester_id == user.id), None)
+    if row:
+        row.status = "pending"
+        row.updated_at = db.func.now()
+    else:
+        row = FriendRequest(requester_id=user.id, addressee_id=target.id)
+        db.session.add(row)
+    db.session.commit()
+    return jsonify(friend_request_json(row, target)), 201
+
+
+@messages_blueprint.patch("/friend-requests/<int:request_id>")
+def update_friend_request(request_id):
+    user = current_user()
+    if user is None:
+        return api_error("Login required", 401)
+    row = db.session.get(FriendRequest, request_id)
+    if row is None:
+        return api_error("Friend request not found", 404)
+    if row.addressee_id != user.id:
+        return api_error("Only the recipient can respond to this request", 403)
+    if row.status != "pending":
+        return api_error("Friend request is no longer pending", 409)
+    data = request.get_json(silent=True)
+    action = data.get("action") if isinstance(data, dict) else None
+    if action not in ("accept", "decline"):
+        return api_error("action must be accept or decline", 400)
+    row.status = "accepted" if action == "accept" else "declined"
+    db.session.commit()
+    return jsonify(friend_request_json(row, row.requester))
 
 
 @messages_blueprint.route("/messages", methods=["GET", "POST"])
@@ -40,6 +118,15 @@ def messages():
             return api_error("Recipient not found", 404)
         if recipient.id == user.id:
             return api_error("Cannot message yourself", 400)
+        friendship = FriendRequest.query.filter(
+            FriendRequest.status == "accepted",
+            or_(
+                (FriendRequest.requester_id == user.id) & (FriendRequest.addressee_id == recipient.id),
+                (FriendRequest.requester_id == recipient.id) & (FriendRequest.addressee_id == user.id),
+            ),
+        ).first()
+        if friendship is None:
+            return api_error("You can only message accepted friends", 403)
         if not recipient.public_key:
             return api_error("Recipient has not set up encryption yet", 409)
         if not isinstance(encoded_payload, str) or len(encoded_payload) > 1_400_000:
@@ -73,6 +160,10 @@ def messages():
         )
     rows = query.order_by(Message.created_at, Message.id).all()
     return jsonify([message_json(message) for message in rows])
+
+
+def friend_request_json(row, other_user):
+    return {"id": row.id, "status": row.status, "created_at": row.created_at.isoformat(), "user": user_json(other_user)}
 
 
 def message_json(message):

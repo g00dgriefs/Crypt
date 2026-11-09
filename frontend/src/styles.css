@@ -188,6 +188,74 @@ input {
   margin: 0 0 1rem;
 }
 
+.friendslist .add-friend-button {
+  width: 100%;
+  margin: 0 0 0.75rem;
+  padding: 0.55rem 0.7rem;
+  color: #fff;
+  text-align: center;
+  background: #315f9c;
+}
+
+.friendslist .add-friend-button:hover {
+  background: #264d80;
+}
+
+.add-friend-form {
+  margin: 0 0 1rem;
+  padding: 0.7rem;
+  background: #fff;
+  border: 1px solid #d7dbe0;
+  border-radius: 6px;
+}
+
+.add-friend-form label {
+  margin: 0 0 0.35rem;
+  font-size: 0.85rem;
+}
+
+.add-friend-form input {
+  width: 100%;
+  max-width: none;
+  margin: 0 0 0.5rem;
+}
+
+.add-friend-form button,
+.friend-request button {
+  width: auto;
+  margin: 0.15rem 0.2rem 0.15rem 0;
+  padding: 0.4rem 0.55rem;
+  color: #202632;
+  text-align: center;
+  background: #e9edf2;
+}
+
+.friend-requests {
+  margin: 0.75rem 0;
+  padding: 0.65rem;
+  background: #fff;
+  border: 1px solid #e1e5ea;
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+.friend-requests h4 {
+  margin: 0 0 0.5rem;
+}
+
+.friend-requests p {
+  margin: 0.35rem 0;
+}
+
+.friend-request + .friend-request {
+  margin-top: 0.5rem;
+}
+
+.friend-error {
+  color: #a12622;
+  font-size: 0.85rem;
+}
+
 .friendslist button {
   display: block;
   width: 100%;

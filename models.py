@@ -28,6 +28,29 @@ class User(db.Model):
         back_populates="recipient",
         lazy=True,
     )
+    sent_friend_requests = db.relationship(
+        "FriendRequest", foreign_keys="FriendRequest.requester_id", back_populates="requester"
+    )
+    received_friend_requests = db.relationship(
+        "FriendRequest", foreign_keys="FriendRequest.addressee_id", back_populates="addressee"
+    )
+
+
+class FriendRequest(db.Model):
+    __table_args__ = (
+        db.UniqueConstraint("requester_id", "addressee_id", name="uq_friend_request_pair"),
+        db.CheckConstraint("requester_id != addressee_id", name="ck_friend_request_not_self"),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    requester_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False, index=True)
+    addressee_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False, index=True)
+    status = db.Column(db.String(16), nullable=False, default="pending")
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    requester = db.relationship("User", foreign_keys=[requester_id], back_populates="sent_friend_requests")
+    addressee = db.relationship("User", foreign_keys=[addressee_id], back_populates="received_friend_requests")
 
 
 class Message(db.Model):
