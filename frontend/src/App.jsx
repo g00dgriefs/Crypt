@@ -49,6 +49,7 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [keypair, setKeypair] = useState(null);
   const [friends, setFriends] = useState([]);
+  const [friendRequests, setFriendRequests] = useState({ incoming: [], outgoing: [] });
   const [messages, setMessages] = useState([]);
   const [authChecked, setAuthChecked] = useState(false);
   const [keyError, setKeyError] = useState("");
@@ -81,6 +82,7 @@ export default function App() {
   useEffect(() => {
     if (!user || !keypair) {
       setFriends([]);
+      setFriendRequests({ incoming: [], outgoing: [] });
       setMessages([]);
       return;
     }
@@ -88,13 +90,15 @@ export default function App() {
     setLoadError("");
     const refresh = async () => {
       try {
-        const [contacts, rows] = await Promise.all([
+        const [contacts, rows, requests] = await Promise.all([
           fetch("/api/friends").then(readJson),
           fetch("/api/messages").then(readJson),
+          fetch("/api/friend-requests").then(readJson),
         ]);
         const decrypted = await decryptRows(rows, user, contacts, keypair);
         if (active) {
           setFriends(contacts);
+          setFriendRequests(requests);
           setMessages(decrypted);
           setLoadError("");
         }
@@ -139,6 +143,7 @@ export default function App() {
     setUser(null);
     setKeypair(null);
     setFriends([]);
+    setFriendRequests({ incoming: [], outgoing: [] });
     setMessages([]);
     setKeyError("");
     window.location.hash = "/home";
@@ -168,6 +173,9 @@ export default function App() {
             : <Messages
                 user={user}
                 friends={friends}
+                setFriends={setFriends}
+                friendRequests={friendRequests}
+                setFriendRequests={setFriendRequests}
                 messages={messages}
                 setMessages={setMessages}
                 keypair={keypair}
@@ -242,12 +250,56 @@ function UnlockKey({ onUnlock, error }) {
   </section>;
 }
 
-function Messages({ user, friends, messages, setMessages, keypair, loadError }) {
+function Messages({ user, friends, setFriends, friendRequests, setFriendRequests, messages, setMessages, keypair, loadError }) {
   const [friendId, setFriendId] = useState(null);
   const friend = friends.find((contact) => contact.id === friendId) || null;
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState("");
+  const [addingFriend, setAddingFriend] = useState(false);
+  const [friendUsername, setFriendUsername] = useState("");
+  const [friendError, setFriendError] = useState("");
+  const [friendBusy, setFriendBusy] = useState(false);
+
+  async function addFriend(event) {
+    event.preventDefault();
+    setFriendBusy(true);
+    setFriendError("");
+    try {
+      await readJson(await fetch("/api/friend-requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: friendUsername }),
+      }));
+      const requests = await readJson(await fetch("/api/friend-requests"));
+      setFriendRequests(requests);
+      setFriendUsername("");
+      setAddingFriend(false);
+    } catch (error) {
+      setFriendError(error.message);
+    } finally {
+      setFriendBusy(false);
+    }
+  }
+
+  async function respondToRequest(requestId, action) {
+    setFriendError("");
+    try {
+      await readJson(await fetch(`/api/friend-requests/${requestId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      }));
+      const [requests, contacts] = await Promise.all([
+        fetch("/api/friend-requests").then(readJson),
+        fetch("/api/friends").then(readJson),
+      ]);
+      setFriendRequests(requests);
+      setFriends(contacts);
+    } catch (error) {
+      setFriendError(error.message);
+    }
+  }
 
   async function send(event) {
     event.preventDefault();
@@ -290,6 +342,36 @@ function Messages({ user, friends, messages, setMessages, keypair, loadError }) 
   return <div className="messages-page">
     <aside className="friendslist">
       <h3>Friends</h3>
+      <button className="add-friend-button" type="button" onClick={() => { setAddingFriend((open) => !open); setFriendError(""); }}>
+        {addingFriend ? "Cancel" : "+ Add friend"}
+      </button>
+      {addingFriend && <form className="add-friend-form" onSubmit={addFriend}>
+        <label htmlFor="friend-username">Username</label>
+        <input
+          id="friend-username"
+          value={friendUsername}
+          onChange={(event) => setFriendUsername(event.target.value)}
+          placeholder="Enter username"
+          maxLength={32}
+          required
+        />
+        <button type="submit" disabled={friendBusy}>{friendBusy ? "Sending..." : "Send request"}</button>
+      </form>}
+      {friendRequests.incoming.length > 0 && <div className="friend-requests">
+        <h4>Requests</h4>
+        {friendRequests.incoming.map((item) => <div className="friend-request" key={item.id}>
+          <span>{item.user.username}</span>
+          <div>
+            <button type="button" onClick={() => respondToRequest(item.id, "accept")}>Accept</button>
+            <button type="button" onClick={() => respondToRequest(item.id, "decline")}>Decline</button>
+          </div>
+        </div>)}
+      </div>}
+      {friendRequests.outgoing.length > 0 && <div className="friend-requests">
+        <h4>Sent</h4>
+        {friendRequests.outgoing.map((item) => <p key={item.id}>{item.user.username} · Pending</p>)}
+      </div>}
+      {friendError && <p className="friend-error" role="alert">{friendError}</p>}
       {loadError && <p role="alert">{loadError}</p>}
       {friends.length === 0 ? <p>No contacts available</p> : friends.map((person) => (
         <button
