@@ -173,7 +173,8 @@ return (
 function AccountPage({ mode }) {
   const registering = mode === "register";
   return (
-    <section>
+    <div className="login-page">
+    <section className="login-box">
       <h2>{registering ? "Register" : "Login"}</h2>
       <form>
         {registering && (
@@ -194,7 +195,12 @@ function AccountPage({ mode }) {
             autoComplete={registering ? "new-password" : "current-password"}
           />
         </label>
+
+         {!registering && (
+       <button type="submit">Login</button>
+        )}
       </form>
     </section>
+  </div>
   );
 }

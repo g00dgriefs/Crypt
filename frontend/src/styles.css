@@ -290,3 +290,41 @@ margin-top: 0%;
 
 
 /* Login Page */
+
+.login-page {
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #000;
+  color: white;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.login-box {
+  width: 100%;
+  max-width: 400px;
+  padding: 30px;
+  border: 2px solid #ff00aa;
+  border-radius: 12px;
+  background: #000;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.login-box button {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  margin-top: 15px;
+  background: #000;
+  border: 2px solid #ff00aa;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+}
+
+.login-box button:hover {
+  background: #ff00aa;
+}
