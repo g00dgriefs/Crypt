@@ -196,9 +196,9 @@ function AccountPage({ mode }) {
           />
         </label>
 
-         {!registering && (
-       <button type="submit">Login</button>
-        )}
+        <button type="submit">
+      {registering ? "Register" : "Login"}
+      </button>
       </form>
     </section>
   </div>
