@@ -24,7 +24,7 @@ def friends():
         row.addressee_id if row.requester_id == user.id else row.requester_id
         for row in accepted
     }
-    contacts = User.query.filter(User.id.in_(friend_ids)).order_by(User.username).all() if friend_ids else []
+    contacts = User.query.filter(User.id.in_(friend_ids)).order_by(User.display_name, User.username).all() if friend_ids else []
     return jsonify([user_json(contact) for contact in contacts])
 
 
@@ -47,12 +47,20 @@ def create_friend_request():
     if user is None:
         return api_error("Login required", 401)
     data = request.get_json(silent=True)
-    username = data.get("username") if isinstance(data, dict) else None
-    if not isinstance(username, str) or not username.strip():
-        return api_error("username is required", 400)
-    target = User.query.filter(db.func.lower(User.username) == username.strip().lower()).first()
+    handle = data.get("handle") if isinstance(data, dict) else None
+    if not isinstance(handle, str) or "/" not in handle.strip():
+        return api_error("Enter the full username and identifier, such as goku/4011", 400)
+    username, identifier_text = handle.strip().rsplit("/", 1)
+    username = username.strip()
+    if not username or not identifier_text.isdigit() or len(identifier_text) != 4:
+        return api_error("Enter the full username and four-digit identifier, such as goku/4011", 400)
+    identifier = int(identifier_text)
+    target = User.query.filter(
+        db.func.lower(User.username) == username.lower(),
+        User.identifier == identifier,
+    ).first()
     if target is None:
-        return api_error("User not found", 404)
+        return api_error("No user found with that username and identifier", 404)
     if target.id == user.id:
         return api_error("Cannot add yourself", 400)
     existing = FriendRequest.query.filter(
@@ -97,6 +105,23 @@ def update_friend_request(request_id):
     row.status = "accepted" if action == "accept" else "declined"
     db.session.commit()
     return jsonify(friend_request_json(row, row.requester))
+
+
+@messages_blueprint.delete("/friend-requests/<int:request_id>")
+def cancel_friend_request(request_id):
+    user = current_user()
+    if user is None:
+        return api_error("Login required", 401)
+    row = db.session.get(FriendRequest, request_id)
+    if row is None:
+        return api_error("Friend request not found", 404)
+    if row.requester_id != user.id:
+        return api_error("Only the sender can cancel this request", 403)
+    if row.status != "pending":
+        return api_error("Only pending requests can be cancelled", 409)
+    db.session.delete(row)
+    db.session.commit()
+    return jsonify({"ok": True})
 
 
 @messages_blueprint.route("/messages", methods=["GET", "POST"])

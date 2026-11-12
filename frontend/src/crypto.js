@@ -34,9 +34,10 @@ function storageName(userId) {
   return `crypt-device-key-${userId}`;
 }
 
-/** Generate or unlock this account's keypair, keeping only the encrypted
- * private key in this browser's local storage. The server receives only the
- * public key. The account password is used locally to wrap the private key.
+/** Generate or unlock this account's keypair. The private key is wrapped with
+ * the account password and stored locally; only that encrypted bundle and the
+ * public key are synced to the server. The password and plaintext private key
+ * never leave this browser.
  */
 export async function createOrUnlockDeviceKeys(user, password) {
   await sodium.ready;
@@ -44,9 +45,20 @@ export async function createOrUnlockDeviceKeys(user, password) {
     throw new Error("Enter your account password to unlock the encryption key.");
   }
 
-  const savedValue = localStorage.getItem(storageName(user.id));
+  let savedValue = localStorage.getItem(storageName(user.id));
+  let restoredFromBackup = false;
   let keypair;
   let publicKeyEncoded;
+
+  if (!savedValue && user.public_key) {
+    const response = await fetch("/api/device-key-backup");
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(body.error || "This account's device key backup could not be loaded.");
+    }
+    savedValue = JSON.stringify(body.backup);
+    restoredFromBackup = true;
+  }
 
   if (savedValue) {
     const saved = JSON.parse(savedValue);
@@ -121,6 +133,10 @@ export async function createOrUnlockDeviceKeys(user, password) {
     throw new Error("The encryption key saved on this device does not match this account.");
   }
 
+  if (restoredFromBackup) {
+    localStorage.setItem(storageName(user.id), savedValue);
+  }
+
   if (!user.public_key) {
     const response = await fetch("/api/public-key", {
       method: "PUT",
@@ -129,6 +145,17 @@ export async function createOrUnlockDeviceKeys(user, password) {
     });
     const body = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(body.error || "Could not save the public key.");
+  }
+
+  const backup = JSON.parse(localStorage.getItem(storageName(user.id)));
+  const backupResponse = await fetch("/api/device-key-backup", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ backup }),
+  });
+  const backupResult = await backupResponse.json().catch(() => ({}));
+  if (!backupResponse.ok) {
+    throw new Error(backupResult.error || "Could not save the encrypted device key backup.");
   }
 
   return keypair;
