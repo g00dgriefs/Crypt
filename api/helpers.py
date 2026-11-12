@@ -19,6 +19,10 @@ def user_json(user):
     return {
         "id": user.id,
         "username": user.username,
+        "identifier": user.identifier,
+        "display_name": user.display_name or "Crypt User",
+        "bio": user.bio or "",
+        "profile_picture": user.profile_picture,
         "public_key": base64.urlsafe_b64encode(user.public_key).decode("ascii")
         if user.public_key
         else None,

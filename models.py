@@ -5,7 +5,20 @@ from extensions import db
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(32), unique=True, nullable=False, index=True)
+    username = db.Column(db.String(32), nullable=False, index=True)
+    identifier = db.Column(db.Integer, nullable=False)
+    display_name = db.Column(db.String(32), nullable=False, default="Crypt User")
+    bio = db.Column(db.String(500), nullable=False, default="")
+    profile_picture = db.Column(db.Text, nullable=True)
+    encrypted_key_backup = db.Column(db.Text, nullable=True)
+    __table_args__ = (
+        db.Index(
+            "uq_user_username_identifier",
+            db.func.lower(username),
+            identifier,
+            unique=True,
+        ),
+    )
     email = db.Column(db.String(255), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
     # Public keys are safe to store on the server. Private keys stay with users.
@@ -72,3 +85,25 @@ class Message(db.Model):
     recipient = db.relationship(
         "User", foreign_keys=[recipient_id], back_populates="received_messages"
     )
+
+
+class ProfilePost(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    author_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False, index=True)
+    content = db.Column(db.String(2000), nullable=False)
+    created_at = db.Column(
+        db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), index=True
+    )
+    author = db.relationship("User", foreign_keys=[author_id])
+
+
+class ProfileComment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    profile_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False, index=True)
+    post_id = db.Column(db.Integer, db.ForeignKey("profile_post.id", ondelete="CASCADE"), nullable=True, index=True)
+    author_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False, index=True)
+    content = db.Column(db.String(1000), nullable=False)
+    created_at = db.Column(
+        db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), index=True
+    )
+    author = db.relationship("User", foreign_keys=[author_id])
