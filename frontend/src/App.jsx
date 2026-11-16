@@ -738,7 +738,8 @@ function AccountPage({ mode, onAuthenticated }) {
     }
   }
 
-  return <section className="page">
+  return <section className={`page ${registering ? "register-page" : "login-page"}`}>
+     <div className="login-box">
     <h2>{registering ? "Register" : "Login"}</h2>
     <form onSubmit={submit}>
       {registering && <label>
@@ -762,5 +763,6 @@ function AccountPage({ mode, onAuthenticated }) {
       {error && <p role="alert">{error}</p>}
       <button type="submit" disabled={busy}>{busy ? "Please wait..." : registering ? "Register" : "Login"}</button>
     </form>
+   </div>
   </section>;
 }
