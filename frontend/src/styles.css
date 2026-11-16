@@ -201,11 +201,11 @@ input {
   padding: 0.55rem 0.7rem;
   color: #fff;
   text-align: center;
-  background: #315f9c;
+  background: #ff00aa;
 }
 
 .friendslist .add-friend-button:hover {
-  background: #264d80;
+  background: #ff00aa;
 }
 
 .add-friend-form {
@@ -232,7 +232,7 @@ input {
   width: auto;
   margin: 0.15rem 0.2rem 0.15rem 0;
   padding: 0.4rem 0.55rem;
-  color: #202632;
+  color: #ff00aa;
   text-align: center;
   background: #e9edf2;
 }
@@ -291,7 +291,7 @@ input {
   width: 100%;
   margin: 0.35rem 0;
   padding: 0.7rem;
-  color: #202632;
+  color: #ff00aa;
   text-align: left;
   background: transparent;
   border: 0;
