@@ -136,6 +136,19 @@ def update_profile():
     return jsonify({"user": user_json(user)})
 
 
+@auth_blueprint.put("/profile/comment-settings")
+def update_profile_comment_settings():
+    user = current_user()
+    if user is None:
+        return api_error("Login required", 401)
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict) or not isinstance(data.get("allow_profile_comments"), bool):
+        return api_error("allow_profile_comments must be a boolean", 400)
+    user.allow_profile_comments = data["allow_profile_comments"]
+    db.session.commit()
+    return jsonify({"user": user_json(user)})
+
+
 @auth_blueprint.put("/public-key")
 def set_public_key():
     user = current_user()

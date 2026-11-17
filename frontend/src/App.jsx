@@ -79,7 +79,6 @@ export default function App() {
   const [profileComments, setProfileComments] = useState([]);
   const [profileCommentsLoading, setProfileCommentsLoading] = useState(false);
   const [profileCommentsError, setProfileCommentsError] = useState("");
-
   useEffect(() => {
     const updatePage = () => setPage(currentPage());
     window.addEventListener("hashchange", updatePage);
@@ -285,7 +284,29 @@ export default function App() {
       )}
       {page === "login" && <AccountPage mode="login" onAuthenticated={finishSignIn} />}
       {page === "register" && <AccountPage mode="register" onAuthenticated={finishSignIn} />}
-      {page === "settings" && <SettingsPage />}
+      {page === "settings" && <SettingsPage
+        user={user}
+        onLogout={logout}
+        onProfileCommentsChange={async (enabled) => {
+          const result = await readJson(await fetch("/api/profile/comment-settings", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ allow_profile_comments: enabled }),
+          }));
+          setUser(result.user);
+        }}
+        onEditProfile={() => {
+          if (!user) { window.location.hash = "/login"; return; }
+          setProfileUser(user);
+          setProfileName(user.display_name || "Crypt User");
+          setProfileUsername(user.username);
+          setProfileBio(user.bio || "");
+          setProfilePicture(user.profile_picture || null);
+          setProfileError("");
+          setProfileEditing(true);
+          setProfileOpen(true);
+        }}
+      />}
       {!['home', 'messages', 'login', 'register', 'settings'].includes(page) && (
         <section><h2>Page not found</h2><p>Choose a page from the navigation above.</p></section>
       )}
@@ -404,10 +425,10 @@ function ProfileCommentsView({ profile, isOwner, comments, loading, error, onCre
         {isOwner && <button className="profile-comment-delete" type="button" disabled={deletingId === comment.id} aria-label={`Delete comment by ${comment.author.display_name || "Crypt User"}`} onClick={() => deleteComment(comment.id)}>{deletingId === comment.id ? "Deleting..." : "Delete"}</button>}
       </div>)}
     </div>}
-    <form className="profile-comment-form" onSubmit={submitComment}>
+    {(profile.allow_profile_comments !== false || isOwner) ? <form className="profile-comment-form" onSubmit={submitComment}>
       <input value={commentContent} onChange={(event) => setCommentContent(event.target.value)} maxLength={1000} placeholder={`Comment on ${profile.display_name || "Crypt User"}'s page...`} aria-label="Comment on this profile" />
       <button type="submit" disabled={submitting || !commentContent.trim()}>{submitting ? "Sending..." : "Comment"}</button>
-    </form>
+    </form> : <p>Profile comments are turned off.</p>}
   </div>;
 }
 
@@ -461,18 +482,46 @@ function OnboardingDialog({ onSkip, onSave }) {
   </div>;
 }
 
-function SettingsPage() {
+function SettingsPage({ user, onLogout, onEditProfile, onProfileCommentsChange }) {
+  const [category, setCategory] = useState("");
+  const [privacySaving, setPrivacySaving] = useState(false);
+  const [privacyError, setPrivacyError] = useState("");
   const categories = ["Profile", "Account", "Privacy", "Voice and Video", "Appearance", "Accessibility"];
 
   return <section className="page settings-page">
-    <h2>Settings</h2>
-    <div className="settings-categories">
-      {categories.map((category) => (
-        <div className="settings-category" key={category}>
-          <h3>{category}</h3>
-        </div>
-      ))}
-    </div>
+    {category ? <>
+      <button type="button" onClick={() => setCategory("")}>Back to settings</button>
+      <h2>{category}</h2>
+      {category === "Profile" && <button type="button" onClick={onEditProfile}>{user ? "Edit profile" : "Log in to edit profile"}</button>}
+      {category === "Account" && (user
+        ? <div><h3>Account settings</h3><button type="button" onClick={onLogout}>Log out</button></div>
+        : <div><h3>Account settings</h3><a href="#/login">Log in</a></div>)}
+      {category === "Voice and Video" && <p>Coming Soon</p>}
+      {category === "Privacy" && <div>
+        <h3>Profile comments</h3>
+        <button type="button" disabled={!user || privacySaving} onClick={async () => {
+          setPrivacySaving(true);
+          setPrivacyError("");
+          try {
+            await onProfileCommentsChange(!(user.allow_profile_comments ?? true));
+          } catch (error) {
+            setPrivacyError(error.message);
+          } finally {
+            setPrivacySaving(false);
+          }
+        }}>{!user ? "Log in to change" : (user.allow_profile_comments ?? true) ? "Turn off profile comments" : "Turn on profile comments"}</button>
+        {privacyError && <p role="alert">{privacyError}</p>}
+      </div>}
+    </> : <>
+      <h2>Settings</h2>
+      <div className="settings-categories">
+        {categories.map((item) => (
+          <button type="button" className="settings-category" key={item} onClick={() => setCategory(item)} style={{ width: "100%", color: "inherit", font: "inherit", textAlign: "left", cursor: "pointer" }}>
+            <h3>{item}</h3>
+          </button>
+        ))}
+      </div>
+    </>}
   </section>;
 }
 

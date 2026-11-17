@@ -10,6 +10,7 @@ class User(db.Model):
     display_name = db.Column(db.String(32), nullable=False, default="Crypt User")
     bio = db.Column(db.String(500), nullable=False, default="")
     profile_picture = db.Column(db.Text, nullable=True)
+    allow_profile_comments = db.Column(db.Boolean, nullable=False, default=True, server_default="1")
     encrypted_key_backup = db.Column(db.Text, nullable=True)
     __table_args__ = (
         db.Index(

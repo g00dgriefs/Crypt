@@ -26,8 +26,11 @@ def create_profile_comment(user_id):
     user = current_user()
     if user is None:
         return api_error("Login required", 401)
-    if db.session.get(User, user_id) is None:
+    profile = db.session.get(User, user_id)
+    if profile is None:
         return api_error("Profile not found", 404)
+    if not profile.allow_profile_comments and user.id != profile.id:
+        return api_error("Profile comments are turned off", 403)
     data = request.get_json(silent=True)
     content = data.get("content") if isinstance(data, dict) else None
     if not isinstance(content, str) or not content.strip() or len(content.strip()) > 1000:
