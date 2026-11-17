@@ -961,3 +961,15 @@ input {
 .register-page .login-box {
   margin: auto;
 }
+
+/* Message Image Form */
+
+.message-image {
+  display: block;
+  max-width: 250px;
+  max-height: 250px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 12px;
+}

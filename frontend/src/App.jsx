@@ -2,8 +2,12 @@ import { useEffect, useState } from "react";
 import {
   createOrUnlockDeviceKeys,
   decryptText,
+  decryptImage,
   encodePublicKey,
   encryptText,
+  encryptImage,
+  isEncryptedImage,
+  imageToDataUrl,
 } from "./crypto.js";
 
 function currentPage() {
@@ -28,21 +32,44 @@ function Avatar({ profilePicture, className = "friend-avatar" }) {
     : <span className={className} aria-hidden="true" />;
 }
 
+
 async function decryptRows(rows, user, contacts, keypair) {
   const currentUser = {
     ...user,
     public_key: user.public_key || encodePublicKey(keypair.publicKey),
   };
+
   return Promise.all(rows.map(async (row) => {
     const sender = row.sender_id === user.id
       ? currentUser
       : contacts.find((contact) => contact.id === row.sender_id);
+
     if (!sender?.public_key) {
       return { ...row, content: "Sender encryption key unavailable" };
     }
+
     try {
+      // Checks if this is an image message
+      if (isEncryptedImage(row.encrypted_payload)) {
+        const image = await decryptImage(
+          row.encrypted_payload,
+          sender.public_key,
+          keypair.privateKey,
+          row.sender_id === user.id
+        );
+
+        return {
+          ...row,
+          type: "image",
+          imageUrl: imageToDataUrl(image.mimeType, image.imageBytes),
+          content: "",
+        };
+      }
+
+      // If it isnt a Image it decrypt it as a normal text message
       return {
         ...row,
+        type: "text",
         content: await decryptText(
           row.encrypted_payload,
           sender.public_key,
@@ -51,10 +78,14 @@ async function decryptRows(rows, user, contacts, keypair) {
         ),
       };
     } catch {
-      return { ...row, content: "Unable to decrypt this message on this device" };
+      return {
+        ...row,
+        content: "Unable to decrypt this message on this device",
+      };
     }
   }));
 }
+
 
 export default function App() {
   const [page, setPage] = useState(currentPage);
@@ -614,6 +645,88 @@ function Messages({ user, onOpenProfile, friends, setFriends, friendRequests, se
     }
   }
 
+  async function sendImage(event) {
+   const file = event.target.files[0];
+    
+    // Stops if not image was selected
+    if (!file) return;
+    
+    const allowedTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/gif",
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      setsendError("Please Select a JPEG,PNG,WEBP OR GIF");
+      event.target.value = "";
+      return;
+    }
+   
+    if (file.size > 450 * 1024) {
+      setSendError("Image must be smaller than 450 KB.");
+      event.target.value = "";
+      return;
+    }
+
+    if (!friend || !keypair || sending) {
+      event.target.value = "";
+      return;
+    }
+  
+    if (!friend.public_key) {
+      setSendError("This friend has not set up an encryption key yet.");
+      event.target.value = "";
+      return;
+    }
+  
+    setSending(true);
+    setSendError("");
+  
+    try {
+      // Read the image so we can display it immediately
+      const imageBytes = new Uint8Array(await file.arrayBuffer());
+      const imageUrl = imageToDataUrl(file.type, imageBytes);
+  
+      // Encrypt the image
+      const encryptedPayload = await encryptImage(
+        file,
+        friend.public_key,
+        keypair.privateKey
+      );
+  
+      // Send it to Flask
+      const response = await fetch("/api/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          recipient_id: friend.id,
+          encrypted_payload: encryptedPayload,
+        }),
+      });
+  
+      const sent = await readJson(response);
+  
+      // Add the image to the conversation
+      setMessages((current) => [
+        ...current,
+        {
+          ...sent,
+          type: "image",
+          imageUrl,
+          content: "",
+        },
+      ]);
+    } catch (error) {
+      setSendError(error.message || "Image could not be sent");
+    } finally {
+      setSending(false);
+      event.target.value = "";
+    }
+  }
+  
+
   const conversation = messages.filter((item) =>
     item.sender_id === friend?.id || item.recipient_id === friend?.id
   );
@@ -688,9 +801,19 @@ function Messages({ user, onOpenProfile, friends, setFriends, friendRequests, se
               <div className="message-sender">
                 {item.sender_id === user.id ? (user.display_name || "Crypt User") : (friend.display_name || "Crypt User")}
               </div>
+
+              {item.type === "image" ? (
+                <img
+                className="message-image"
+                src={item.imageUrl}
+                alt="image attachment"
+                />
+              ) : (
+
               <div className="messaging-bubble">{item.content}</div>
+              )}
             </div>
-          ))}
+          ))} 
         </div>
         {sendError && <p role="alert">{sendError}</p>}
         <form className="message-form" onSubmit={send}>
@@ -701,6 +824,15 @@ function Messages({ user, onOpenProfile, friends, setFriends, friendRequests, se
             onChange={(event) => setMessage(event.target.value)}
             disabled={sending}
           />
+
+          <input 
+           type="file"
+           accept="image/jpeg,image/png,image/webp,image/gif"
+           onChange={sendImage}
+           disabled={sending || !friend || !friend.public_key}
+
+           />
+
           <button type="submit" disabled={sending || !friend.public_key}>
             {sending ? "Sending..." : "Send"}
           </button>

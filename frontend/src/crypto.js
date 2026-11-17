@@ -181,6 +181,120 @@ export async function encryptText(plaintext, recipientPublicKey, senderPrivateKe
   return toBase64(envelope);
 }
 
+export async function encryptImage(file, recipientPublicKey, senderPrivateKey) {
+  await sodium.ready;
+
+  // Reads the image as binary data
+  const imageBytes = new Uint8Array(await file.arrayBuffer());
+
+  // Includes the image type so the recipient knows how to display it
+  const mimeBytes = sodium.from_string(file.type || "image/jpeg");
+
+  const plaintext = new Uint8Array(
+    mimeBytes.length + 1 + imageBytes.length
+  );
+
+  plaintext.set(mimeBytes, 0);
+  plaintext.set(imageBytes, mimeBytes.length + 1);
+
+  // Encrypts it for both sender and recipient
+  const senderPublicKey = sodium.crypto_scalarmult_base(senderPrivateKey);
+
+  const recipientCopy = encryptBoxPayload(
+    plaintext,
+    recipientPublicKey,
+    senderPrivateKey
+  );
+
+  const senderCopy = encryptBoxPayload(
+    plaintext,
+    toBase64(senderPublicKey),
+    senderPrivateKey
+  );
+
+  const header = new Uint8Array([67, 82, 89, 80, 84, 2]); // CRYPT Version 2
+  const length = new Uint8Array(4);
+
+  new DataView(length.buffer).setUint32(0, recipientCopy.length);
+
+  const envelope = new Uint8Array(
+    10 + recipientCopy.length + senderCopy.length
+  );
+
+  envelope.set(header, 0);
+  envelope.set(length, 6);
+  envelope.set(recipientCopy, 10);
+  envelope.set(senderCopy, 10 + recipientCopy.length);
+
+  return toBase64(envelope);
+}
+
+
+
+export async function decryptImage(
+  encodedPayload,
+  senderPublicKey,
+  recipientPrivateKey,
+  isSender = false
+) {
+  await sodium.ready;
+
+  let payload = fromBase64(encodedPayload);
+
+  const magic = [67, 82, 89, 80, 84, 2];
+
+  if (!magic.every((byte, index) => payload[index] === byte)) {
+    throw new Error("This is not an encrypted image.");
+  }
+
+  if (payload.length < 10) {
+    throw new Error("Encrypted image is incomplete.");
+  }
+
+  const recipientLength = new DataView(
+    payload.buffer,
+    payload.byteOffset,
+    payload.byteLength
+  ).getUint32(6);
+
+  const senderStart = 10 + recipientLength;
+
+  if (senderStart > payload.length || recipientLength < sodium.crypto_box_NONCEBYTES + sodium.crypto_box_MACBYTES) {
+    throw new Error("Encrypted image is incomplete.");
+  }
+
+  payload = isSender
+    ? payload.subarray(senderStart)
+    : payload.subarray(10, senderStart);
+
+  if (payload.length < sodium.crypto_box_NONCEBYTES + sodium.crypto_box_MACBYTES) {
+    throw new Error("Encrypted image is incomplete.");
+  }
+
+  const nonce = payload.subarray(0, sodium.crypto_box_NONCEBYTES);
+  const ciphertext = payload.subarray(sodium.crypto_box_NONCEBYTES);
+
+  const plaintext = sodium.crypto_box_open_easy(
+    ciphertext,
+    nonce,
+    fromBase64(senderPublicKey),
+    recipientPrivateKey
+  );
+
+  const separatorIndex = plaintext.indexOf(0);
+
+  if (separatorIndex === -1) {
+    throw new Error("Image data is not valid.");
+  }
+
+  return {
+    mimeType: sodium.to_string(plaintext.subarray(0, separatorIndex)),
+    imageBytes: plaintext.subarray(separatorIndex + 1)
+  };
+}
+
+
+
 function encryptBoxPayload(message, recipientPublicKey, senderPrivateKey) {
   const nonce = sodium.randombytes_buf(sodium.crypto_box_NONCEBYTES);
   const ciphertext = sodium.crypto_box_easy(
@@ -226,4 +340,23 @@ export async function decryptText(encodedPayload, senderPublicKey, recipientPriv
 
 export function encodePublicKey(publicKey) {
   return toBase64(publicKey);
+}
+
+
+export function isEncryptedImage(encodedPayload) {
+  const payload = fromBase64(encodedPayload);
+
+  return (
+    payload.length >= 6 &&
+    payload[0] === 67 &&
+    payload[1] === 82 &&
+    payload[2] === 89 &&
+    payload[3] === 80 &&
+    payload[4] === 84 &&
+    payload[5] === 2 
+  );
+}
+
+export function imageToDataUrl(mimeType, imageBytes) {
+  return `Data:${mimeType};base64,${toBase64(imageBytes)}`;
 }
