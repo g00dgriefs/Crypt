@@ -54,7 +54,6 @@ async function decryptRows(rows, user, contacts, keypair) {
     }
 
     try {
-      // Checks if this is an image message
       if (isEncryptedImage(row.encrypted_payload)) {
         const image = await decryptImage(
           row.encrypted_payload,
@@ -71,7 +70,6 @@ async function decryptRows(rows, user, contacts, keypair) {
         };
       }
 
-      // If it isnt a Image it decrypt it as a normal text message
       return {
         ...row,
         type: "text",
@@ -1052,7 +1050,6 @@ function Messages({ user, onOpenProfile, friends, setFriends, friendRequests, se
   async function sendImage(event) {
    const file = event.target.files[0];
     
-    // Stops if not image was selected
     if (!file) return;
     
     const allowedTypes = [
@@ -1089,18 +1086,15 @@ function Messages({ user, onOpenProfile, friends, setFriends, friendRequests, se
     setSendError("");
   
     try {
-      // Read the image so we can display it immediately
       const imageBytes = new Uint8Array(await file.arrayBuffer());
       const imageUrl = imageToDataUrl(file.type, imageBytes);
   
-      // Encrypt the image
       const encryptedPayload = await encryptImage(
         file,
         friend.public_key,
         keypair.privateKey
       );
   
-      // Send it to Flask
       const response = await fetch("/api/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1112,7 +1106,6 @@ function Messages({ user, onOpenProfile, friends, setFriends, friendRequests, se
   
       const sent = await readJson(response);
   
-      // Add the image to the conversation
       setMessages((current) => [
         ...current,
         {

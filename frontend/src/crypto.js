@@ -242,7 +242,6 @@ export async function encryptText(plaintext, recipientPublicKey, senderPrivateKe
 export async function encryptImage(file, recipientPublicKey, senderPrivateKey) {
   await sodium.ready;
 
-  // Reads the image as binary data
   const imageBytes = new Uint8Array(await file.arrayBuffer());
 
   // Includes the image type so the recipient knows how to display it
@@ -255,7 +254,6 @@ export async function encryptImage(file, recipientPublicKey, senderPrivateKey) {
   plaintext.set(mimeBytes, 0);
   plaintext.set(imageBytes, mimeBytes.length + 1);
 
-  // Encrypts it for both sender and recipient
   const senderPublicKey = sodium.crypto_scalarmult_base(senderPrivateKey);
 
   const recipientCopy = encryptBoxPayload(

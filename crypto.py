@@ -1,7 +1,6 @@
-"""Password hashing and end-to-end message encryption using libsodium via PyNaCl.
+"""Password hashing and end-to-end message encryption using PyNaCl.
 
-Message encryption uses each sender's private key and the recipient's public key.
-Keep private keys on user devices and do not send them to or store them on the server.
+Private keys belong on user devices and should never be sent to or stored by the server.
 """
 
 import base64
@@ -12,21 +11,18 @@ from nacl.public import Box, PrivateKey, PublicKey
 
 
 def generate_box_keypair() -> tuple[bytes, bytes]:
-    """Generate a NaCl Box keypair for local/device-side use.
-
-    !!!!call this on a user device and keep the private key there. dont send private key through flask endpoint
-    """
+    """Generate a NaCl Box keypair locally; keep the private key on the user's device."""
     private_key = PrivateKey.generate()
     return bytes(private_key), bytes(private_key.public_key)
 
 
 def hash_password(password: str) -> str:
-    """Return an Argon2id hash suitable for storing in the users table."""
+    """Hash a password with Argon2id for database storage."""
     return argon2id.str(password.encode("utf-8")).decode("ascii")
 
 
 def verify_password(password: str, encoded_hash: str) -> bool:
-    """cerify a password hash without raising on an invalid or malformed hash."""
+    """Verify an Argon2id hash, returning False for malformed hashes."""
     try:
         return argon2id.verify(encoded_hash.encode("ascii"), password.encode("utf-8"))
     except (exceptions.InvalidkeyError, UnicodeEncodeError, ValueError):
@@ -36,7 +32,6 @@ def verify_password(password: str, encoded_hash: str) -> bool:
 def encrypt_for_recipient(
     plaintext: str, sender_private_key: bytes, recipient_public_key: bytes
 ) -> bytes:
-    """Encrypt text for a recipient"""
     box = Box(PrivateKey(sender_private_key), PublicKey(recipient_public_key))
     encrypted = box.encrypt(plaintext.encode("utf-8"))
     return bytes(encrypted)
@@ -45,16 +40,13 @@ def encrypt_for_recipient(
 def decrypt_from_sender(
     encrypted_payload: bytes, sender_public_key: bytes, recipient_private_key: bytes
 ) -> str:
-    """Decrypt a stored payload with the recipient's private key."""
     box = Box(PrivateKey(recipient_private_key), PublicKey(sender_public_key))
     return box.decrypt(encrypted_payload).decode("utf-8")
 
 
 def encode_payload(encrypted_payload: bytes) -> str:
-    """Encode encrypted bytes for transport in JSON."""
     return base64.urlsafe_b64encode(encrypted_payload).decode("ascii")
 
 
 def decode_payload(encoded_payload: str) -> bytes:
-    """Decode a JSON-safe encrypted payload."""
     return base64.b64decode(encoded_payload, altchars=b"-_", validate=True)
