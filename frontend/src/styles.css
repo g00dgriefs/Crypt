@@ -410,7 +410,6 @@ input {
   padding: 0.5rem;
 }
 
-/*Crypt Home Page */
 .home-page{ 
   height: 100%;
   box-sizing: border-box;
@@ -459,8 +458,6 @@ input {
   transform: translateY(-3px);
 }
 
-
-/*Crypt Messaging Page */
 
 .messages-page {
   display: flex;
@@ -1339,8 +1336,6 @@ html[data-theme="light"] .profile-comments-arrow:hover {
   }
 }
 
-/* Login Page */
-
 .login-page {
   height: 100%;
   display: flex;
@@ -1380,8 +1375,6 @@ html[data-theme="light"] .profile-comments-arrow:hover {
 }
 
 
-/* Register Page */
-
 .register-page {
   height: 100%;
   display: flex;
@@ -1396,8 +1389,6 @@ html[data-theme="light"] .profile-comments-arrow:hover {
 .register-page .login-box {
   margin: auto;
 }
-
-/* Message Image Form */
 
 .message-image {
   display: block;
