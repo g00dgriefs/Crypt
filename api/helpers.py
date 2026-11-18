@@ -23,7 +23,7 @@ def user_json(user):
         "display_name": user.display_name or "Crypt User",
         "bio": user.bio or "",
         "profile_picture": user.profile_picture,
-        "allow_profile_comments": user.allow_profile_comments,
+        "profile_comment_visibility": user.profile_comment_visibility or "everybody",
         "public_key": base64.urlsafe_b64encode(user.public_key).decode("ascii")
         if user.public_key
         else None,

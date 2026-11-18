@@ -142,11 +142,110 @@ def update_profile_comment_settings():
     if user is None:
         return api_error("Login required", 401)
     data = request.get_json(silent=True)
-    if not isinstance(data, dict) or not isinstance(data.get("allow_profile_comments"), bool):
-        return api_error("allow_profile_comments must be a boolean", 400)
-    user.allow_profile_comments = data["allow_profile_comments"]
+    visibility = data.get("profile_comment_visibility") if isinstance(data, dict) else None
+    if not isinstance(visibility, str) or visibility not in {"everybody", "friends", "nobody"}:
+        return api_error("profile_comment_visibility must be everybody, friends, or nobody", 400)
+    user.profile_comment_visibility = visibility
     db.session.commit()
     return jsonify({"user": user_json(user)})
+
+
+@auth_blueprint.get("/account")
+def account_details():
+    user = current_user()
+    if user is None:
+        return api_error("Login required", 401)
+    return jsonify({"username": user.username, "email": user.email})
+
+
+@auth_blueprint.put("/account")
+def update_account_details():
+    user = current_user()
+    if user is None:
+        return api_error("Login required", 401)
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict) or not isinstance(data.get("field"), str) or not isinstance(data.get("value"), str):
+        return api_error("field and value are required", 400)
+    current_password = data.get("current_password")
+    if not isinstance(current_password, str) or not verify_password(current_password, user.password_hash):
+        return api_error("Current password is incorrect", 403)
+
+    field = data["field"]
+    value = data["value"].strip()
+    if field == "username":
+        if not value or len(value) > 32 or "/" in value:
+            return api_error("Username is required, must be at most 32 characters, and cannot contain /", 400)
+        duplicate = User.query.filter(
+            db.func.lower(User.username) == value.lower(),
+            User.identifier == user.identifier,
+            User.id != user.id,
+        ).first()
+        if duplicate is not None:
+            return api_error("That username and identifier are already in use", 409)
+        user.username = value
+    elif field == "email":
+        value = value.lower()
+        if not value or "@" not in value or len(value) > 255:
+            return api_error("A valid email is required", 400)
+        duplicate = User.query.filter(
+            db.func.lower(User.email) == value,
+            User.id != user.id,
+        ).first()
+        if duplicate is not None:
+            return api_error("That email is already in use", 409)
+        user.email = value
+    else:
+        return api_error("Only username and email can be changed here", 400)
+
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return api_error("That username or email is already in use", 409)
+    return jsonify({"username": user.username, "email": user.email})
+
+
+@auth_blueprint.put("/account/password")
+def update_account_password():
+    user = current_user()
+    if user is None:
+        return api_error("Login required", 401)
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return api_error("Expected a JSON object", 400)
+    current_password = data.get("current_password")
+    new_password = data.get("new_password")
+    if not isinstance(current_password, str) or not verify_password(current_password, user.password_hash):
+        return api_error("Current password is incorrect", 403)
+    if not isinstance(new_password, str) or len(new_password) < 8:
+        return api_error("New password must be at least 8 characters", 400)
+
+    backup = data.get("backup")
+    if user.public_key is not None:
+        required_fields = (
+            "version", "kdf", "opslimit", "memlimit", "public_key", "salt", "nonce",
+            "encrypted_private_key",
+        )
+        if not isinstance(backup, dict) or any(field not in backup for field in required_fields):
+            return api_error("Unlock the device encryption key before changing your password", 409)
+        try:
+            backup_public_key = base64.b64decode(
+                backup["public_key"], altchars=b"-_", validate=True
+            )
+        except (TypeError, binascii.Error, ValueError):
+            return api_error("The encrypted device key is invalid", 400)
+        if backup_public_key != user.public_key or backup.get("version") != 1 or backup.get("kdf") != "argon2id13":
+            return api_error("The encrypted device key does not match this account", 409)
+        serialized = json.dumps(backup, separators=(",", ":"), sort_keys=True)
+        if len(serialized) > 10_000:
+            return api_error("Encrypted key backup is too large", 400)
+        user.encrypted_key_backup = serialized
+    elif backup is not None:
+        return api_error("This account does not have a device encryption key", 409)
+
+    user.password_hash = hash_password(new_password)
+    db.session.commit()
+    return jsonify({"ok": True})
 
 
 @auth_blueprint.put("/public-key")
