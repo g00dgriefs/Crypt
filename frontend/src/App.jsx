@@ -8,7 +8,12 @@ import {
   encryptImage,
   isEncryptedImage,
   imageToDataUrl,
+  rewrapDeviceKeyBackup,
 } from "./crypto.js";
+import friendRequestIcon from "../assets/skull-friend-request.svg";
+import messagesNavIcon from "../assets/bat-speech-bubble.svg";
+import friendsNavIcon from "../assets/skull-friends.svg";
+import settingsNavIcon from "../assets/saw-blade.svg";
 
 function currentPage() {
   return window.location.hash.replace(/^#\/?/, "") || "home";
@@ -110,12 +115,29 @@ export default function App() {
   const [profileComments, setProfileComments] = useState([]);
   const [profileCommentsLoading, setProfileCommentsLoading] = useState(false);
   const [profileCommentsError, setProfileCommentsError] = useState("");
+  const [theme, setTheme] = useState(() => localStorage.getItem("crypt-theme") === "light" ? "light" : "dark");
+  const [profileFriendMessage, setProfileFriendMessage] = useState("");
+  const [profileFriendBusy, setProfileFriendBusy] = useState(false);
 
   useEffect(() => {
-    const updatePage = () => setPage(currentPage());
+    localStorage.setItem("crypt-theme", theme);
+    document.documentElement.dataset.theme = theme;
+  }, [theme]);
+  useEffect(() => {
+    const updatePage = () => {
+      const requestedPage = currentPage();
+      let nextPage = requestedPage;
+      if (authChecked && user && requestedPage === "home") nextPage = "messages";
+      if (authChecked && !user && !["home", "login", "register"].includes(requestedPage)) nextPage = "home";
+      if (nextPage !== requestedPage) {
+        window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#/${nextPage}`);
+      }
+      setPage(nextPage);
+    };
     window.addEventListener("hashchange", updatePage);
+    updatePage();
     return () => window.removeEventListener("hashchange", updatePage);
-  }, []);
+  }, [user, authChecked]);
 
   useEffect(() => {
     if (!profileOpen) return undefined;
@@ -239,6 +261,25 @@ export default function App() {
     setProfileComments(await readJson(await fetch(`/api/profiles/${profileUser.id}/comments`)));
   }
 
+  async function addProfileFriend() {
+    if (!profileUser || !user || profileFriendBusy) return;
+    setProfileFriendBusy(true);
+    setProfileFriendMessage("");
+    try {
+      await readJson(await fetch("/api/friend-requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ handle: `${profileUser.username}/${String(profileUser.identifier).padStart(4, "0")}` }),
+      }));
+      setFriendRequests(await readJson(await fetch("/api/friend-requests")));
+      setProfileFriendMessage("Friend request sent.");
+    } catch (error) {
+      setProfileFriendMessage(error.message);
+    } finally {
+      setProfileFriendBusy(false);
+    }
+  }
+
   async function unlockKey(password) {
     setKeyError("");
     try {
@@ -277,22 +318,31 @@ export default function App() {
     }
   }
 
+  const profileCommentVisibility = profileUser?.profile_comment_visibility || "everybody";
+  const canViewProfileComments = Boolean(user && profileUser && (
+    profileUser.id === user.id ||
+    profileCommentVisibility === "everybody" ||
+    (profileCommentVisibility === "friends" && friends.some((friend) => friend.id === profileUser.id))
+  ));
+  const showProfileComments = profileCommentsOpen && canViewProfileComments;
+
   if (!authChecked) return <div className="app"><main><p>Loading...</p></main></div>;
 
   return <div className="app">
-    <header>
-      <h1>Crypt</h1>
-      <nav aria-label="Main navigation">
-        <a href="#/home">Home</a>
-        <a href="#/messages">Messages</a>
-        <a href="#/settings">Settings</a>
-        {!user && <><a href="#/login">Login</a><a href="#/register">Register</a></>}
-        {user && <>
-          <button type="button" onClick={() => { setProfileUser(user); setProfileCommentsOpen(false); setProfileOpen(true); }}>Profile</button>
-          <button type="button" onClick={logout}>Logout</button>
-        </>}
+    {user && <header className="app-header">
+      <div className="app-brand"><h1>Crypt</h1></div>
+      <nav className="icon-nav" aria-label="Main navigation">
+        <a href="#/messages" aria-label="Messages" title="Messages"><img src={messagesNavIcon} alt="" /></a>
+        <a href="#/friends" aria-label="Friends" title="Friends"><img src={friendsNavIcon} alt="" /></a>
+        <a href="#/settings" aria-label="Settings" title="Settings"><img src={settingsNavIcon} alt="" /></a>
       </nav>
-    </header>
+      <div className="account-nav">
+        {!user && <><a href="#/login">Login</a><a href="#/register">Register</a></>}
+        {user && <button className="header-profile-button" type="button" aria-label="View profile" title="View profile" onClick={() => { setProfileUser(user); setProfileFriendMessage(""); setProfileCommentsOpen(false); setProfileOpen(true); }}>
+          <Avatar profilePicture={user.profile_picture} className="header-profile-avatar" />
+        </button>}
+      </div>
+    </header>}
 
     <main>
       {page === "home" && <div className="home-page"><Home /></div>}
@@ -303,7 +353,7 @@ export default function App() {
             ? <UnlockKey onUnlock={unlockKey} error={keyError} />
             : <Messages
                 user={user}
-                onOpenProfile={(person) => { setProfileUser(person); setProfileCommentsOpen(false); setProfileOpen(true); }}
+                onOpenProfile={(person) => { setProfileUser(person); setProfileFriendMessage(""); setProfileCommentsOpen(false); setProfileOpen(true); }}
                 friends={friends}
                 setFriends={setFriends}
                 friendRequests={friendRequests}
@@ -316,8 +366,42 @@ export default function App() {
       )}
       {page === "login" && <AccountPage mode="login" onAuthenticated={finishSignIn} />}
       {page === "register" && <AccountPage mode="register" onAuthenticated={finishSignIn} />}
-      {page === "settings" && <SettingsPage />}
-      {!['home', 'messages', 'login', 'register', 'settings'].includes(page) && (
+      {page === "friends" && <FriendsPage
+        user={user}
+        friends={friends}
+        setFriends={setFriends}
+        friendRequests={friendRequests}
+        setFriendRequests={setFriendRequests}
+        onViewProfile={(person) => { setProfileUser(person); setProfileFriendMessage(""); setProfileCommentsOpen(false); setProfileOpen(true); }}
+      />}
+      {page === "settings" && <SettingsPage
+        user={user}
+        theme={theme}
+        onThemeChange={setTheme}
+        onLogout={logout}
+        onAccountChange={(details) => setUser((current) => ({ ...current, ...details }))}
+        onProfileCommentsChange={async (visibility) => {
+          const result = await readJson(await fetch("/api/profile/comment-settings", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ profile_comment_visibility: visibility }),
+          }));
+          setUser(result.user);
+        }}
+        onEditProfile={() => {
+          if (!user) { window.location.hash = "/login"; return; }
+          setProfileUser(user);
+          setProfileFriendMessage("");
+          setProfileName(user.display_name || "Crypt User");
+          setProfileUsername(user.username);
+          setProfileBio(user.bio || "");
+          setProfilePicture(user.profile_picture || null);
+          setProfileError("");
+          setProfileEditing(true);
+          setProfileOpen(true);
+        }}
+      />}
+      {!['home', 'messages', 'friends', 'login', 'register', 'settings'].includes(page) && (
         <section><h2>Page not found</h2><p>Choose a page from the navigation above.</p></section>
       )}
     </main>
@@ -328,9 +412,9 @@ export default function App() {
     {profileOpen && profileUser && <div className="profile-overlay" onMouseDown={(event) => {
       if (event.target === event.currentTarget) { setProfileOpen(false); setProfileEditing(false); }
     }}>
-      <section className={`profile-dialog ${profileCommentsOpen ? "profile-dialog-comments" : ""}`} role="dialog" aria-modal="true" aria-labelledby="profile-title">
+      <section className={`profile-dialog ${showProfileComments ? "profile-dialog-comments" : ""}`} role="dialog" aria-modal="true" aria-labelledby="profile-title">
         <button className="profile-close" type="button" aria-label="Close profile" onClick={() => { setProfileOpen(false); setProfileEditing(false); }}>{"\u00d7"}</button>
-        {profileCommentsOpen && <div className="profile-comments-side">
+        {showProfileComments && <div className="profile-comments-side">
           <ProfileCommentsView
             profile={profileUser}
             isOwner={profileUser.id === user?.id}
@@ -342,13 +426,13 @@ export default function App() {
           />
         </div>}
         <div className="profile-summary">
-        <button
+        {canViewProfileComments && <button
           className={`profile-comments-arrow ${profileCommentsOpen ? "is-open" : ""}`}
           type="button"
           aria-label={profileCommentsOpen ? "Close profile comments" : "Open profile comments"}
           aria-expanded={profileCommentsOpen}
           onClick={() => profileCommentsOpen ? setProfileCommentsOpen(false) : openProfileComments()}
-        >{"\u2190"}</button>
+        >{"\u2190"}</button>}
         {profileEditing ? <form className="profile-edit-form" onSubmit={saveProfile}>
           <div className="profile-picture" style={profilePicture ? { backgroundImage: `url(${profilePicture})` } : undefined} />
           <label>Profile picture<input type="file" accept="image/*" onChange={(event) => {
@@ -370,7 +454,16 @@ export default function App() {
             <button type="submit">Save</button>
           </div>
         </form> : <>
-          <div className="profile-picture" style={profileUser.profile_picture ? { backgroundImage: `url(${profileUser.profile_picture})` } : undefined} />
+          <div className="profile-avatar-wrap">
+            <div className="profile-picture" style={profileUser.profile_picture ? { backgroundImage: `url(${profileUser.profile_picture})` } : undefined} />
+            {user && profileUser.id !== user.id &&
+              !friends.some((friend) => friend.id === profileUser.id) &&
+              !friendRequests.outgoing.some((request) => request.user.id === profileUser.id) &&
+              !friendRequests.incoming.some((request) => request.user.id === profileUser.id) &&
+              <button className="profile-friend-request-icon" type="button" disabled={profileFriendBusy} aria-label="Send friend request" title="Send friend request" onClick={addProfileFriend}>
+                <img src={friendRequestIcon} alt="" />
+              </button>}
+          </div>
           <div className="profile-name-row">
             <h2 id="profile-title">{profileUser.display_name || "Crypt User"}</h2>
             {profileUser.id === user?.id && <button type="button" className="profile-settings-button" onClick={() => {
@@ -382,8 +475,11 @@ export default function App() {
               setProfileEditing(true);
             }}>Settings</button>}
           </div>
-          <p className="profile-handle">@{profileUser.username}/{String(profileUser.identifier).padStart(4, "0")}</p>
+          <p className="profile-handle">{profileUser.username}/{String(profileUser.identifier).padStart(4, "0")}</p>
           {profileUser.bio && <p className="profile-bio">{profileUser.bio}</p>}
+          {user && profileUser.id !== user.id && <div className="profile-friend-actions">
+            {profileFriendMessage && <p role="status">{profileFriendMessage}</p>}
+          </div>}
         </>}
         </div>
       </section>
@@ -435,10 +531,10 @@ function ProfileCommentsView({ profile, isOwner, comments, loading, error, onCre
         {isOwner && <button className="profile-comment-delete" type="button" disabled={deletingId === comment.id} aria-label={`Delete comment by ${comment.author.display_name || "Crypt User"}`} onClick={() => deleteComment(comment.id)}>{deletingId === comment.id ? "Deleting..." : "Delete"}</button>}
       </div>)}
     </div>}
-    <form className="profile-comment-form" onSubmit={submitComment}>
+    {(profile.profile_comment_visibility !== "nobody" || isOwner) ? <form className="profile-comment-form" onSubmit={submitComment}>
       <input value={commentContent} onChange={(event) => setCommentContent(event.target.value)} maxLength={1000} placeholder={`Comment on ${profile.display_name || "Crypt User"}'s page...`} aria-label="Comment on this profile" />
       <button type="submit" disabled={submitting || !commentContent.trim()}>{submitting ? "Sending..." : "Comment"}</button>
-    </form>
+    </form> : <p>Profile comments are turned off.</p>}
   </div>;
 }
 
@@ -492,24 +588,332 @@ function OnboardingDialog({ onSkip, onSave }) {
   </div>;
 }
 
-function SettingsPage() {
+function SettingsPage({ user, theme, onThemeChange, onLogout, onEditProfile, onProfileCommentsChange, onAccountChange }) {
+  const [category, setCategory] = useState("");
+  const [privacySaving, setPrivacySaving] = useState(false);
+  const [privacyError, setPrivacyError] = useState("");
   const categories = ["Profile", "Account", "Privacy", "Voice and Video", "Appearance", "Accessibility"];
 
   return <section className="page settings-page">
-    <h2>Settings</h2>
-    <div className="settings-categories">
-      {categories.map((category) => (
-        <div className="settings-category" key={category}>
-          <h3>{category}</h3>
-        </div>
-      ))}
+    {category ? <>
+      <button type="button" onClick={() => setCategory("")}>Back to settings</button>
+      <h2>{category}</h2>
+      {category === "Profile" && <button type="button" onClick={onEditProfile}>{user ? "Edit profile" : "Log in to edit profile"}</button>}
+      {category === "Account" && (user
+        ? <AccountSettings user={user} onLogout={onLogout} onAccountChange={onAccountChange} />
+        : <div><h3>Account settings</h3><a href="#/login">Log in</a></div>)}
+      {category === "Appearance" && <div>
+        <h3>Theme</h3>
+        <button type="button" aria-pressed={theme === "dark"} onClick={() => onThemeChange(theme === "dark" ? "light" : "dark")}>
+          Switch to {theme === "dark" ? "light" : "dark"} mode
+        </button>
+      </div>}
+      {category === "Accessibility" && <p>Coming Soon</p>}
+      {category === "Voice and Video" && <p>Coming Soon</p>}
+      {category === "Privacy" && <div>
+        <label htmlFor="profile-comment-visibility">Profile Comments</label>
+        <select
+          id="profile-comment-visibility"
+          value={user?.profile_comment_visibility || "everybody"}
+          disabled={!user || privacySaving}
+          onChange={async (event) => {
+            setPrivacySaving(true);
+            setPrivacyError("");
+            try {
+              await onProfileCommentsChange(event.target.value);
+            } catch (error) {
+              setPrivacyError(error.message);
+            } finally {
+              setPrivacySaving(false);
+            }
+          }}
+        >
+          <option value="everybody">Everybody</option>
+          <option value="friends">Friends</option>
+          <option value="nobody">Nobody</option>
+        </select>
+        {privacyError && <p role="alert">{privacyError}</p>}
+      </div>}
+    </> : <>
+      <h2>Settings</h2>
+      <div className="settings-categories">
+        {categories.map((item) => (
+          <button type="button" className="settings-category" key={item} onClick={() => setCategory(item)} style={{ width: "100%", color: "inherit", font: "inherit", textAlign: "left", cursor: "pointer" }}>
+            <h3>{item}</h3>
+          </button>
+        ))}
+      </div>
+    </>}
+  </section>;
+}
+
+function AccountSettings({ user, onLogout, onAccountChange }) {
+  const [email, setEmail] = useState("");
+  const [editing, setEditing] = useState("");
+  const [value, setValue] = useState("");
+  const [fieldPassword, setFieldPassword] = useState("");
+  const [passwordCurrent, setPasswordCurrent] = useState("");
+  const [passwordNext, setPasswordNext] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/account").then(readJson).then((account) => {
+      if (active) setEmail(account.email);
+    }).catch((failure) => {
+      if (active) setError(failure.message);
+    });
+    return () => { active = false; };
+  }, []);
+
+  function startEditing(field, currentValue) {
+    setEditing(field);
+    setValue(currentValue);
+    setFieldPassword("");
+    setError("");
+  }
+
+  async function save(event) {
+    event.preventDefault();
+    setSaving(true);
+    setError("");
+    try {
+      const updated = await readJson(await fetch("/api/account", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ field: editing, value, current_password: fieldPassword }),
+      }));
+      setEmail(updated.email);
+      onAccountChange(updated);
+      setEditing("");
+      setFieldPassword("");
+    } catch (failure) {
+      setError(failure.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function changePassword(event) {
+    event.preventDefault();
+    if (passwordNext !== passwordConfirm) {
+      setError("New passwords do not match.");
+      return;
+    }
+    setSaving(true);
+    setError("");
+    try {
+      const rewrapped = await rewrapDeviceKeyBackup(user.id, passwordCurrent, passwordNext);
+      await readJson(await fetch("/api/account/password", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          current_password: passwordCurrent,
+          new_password: passwordNext,
+          backup: rewrapped?.backup ?? null,
+        }),
+      }));
+      if (rewrapped) localStorage.setItem(rewrapped.storageKey, JSON.stringify(rewrapped.backup));
+      setChangingPassword(false);
+      setPasswordCurrent("");
+      setPasswordNext("");
+      setPasswordConfirm("");
+    } catch (failure) {
+      setError(failure.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const accountFields = [
+    { key: "username", label: "Username", current: user.username, action: "Change username" },
+    { key: "email", label: "Email", current: email || "Loading...", action: "Change email" },
+  ];
+
+  return <div>
+    <h3>Account settings</h3>
+    {accountFields.map((field) => <div className="account-setting" key={field.key}>
+      <label htmlFor={`account-${field.key}`}>{field.label}</label>
+      {editing === field.key ? <form className="account-setting-row" onSubmit={save}>
+        <input
+          id={`account-${field.key}`}
+          type={field.key === "email" ? "email" : "text"}
+          value={value}
+          onChange={(event) => setValue(event.target.value)}
+          maxLength={field.key === "email" ? 255 : 32}
+          autoComplete={field.key === "email" ? "email" : "username"}
+          required
+        />
+        <input
+          type="password"
+          value={fieldPassword}
+          onChange={(event) => setFieldPassword(event.target.value)}
+          placeholder="Current password"
+          aria-label="Current password"
+          autoComplete="current-password"
+          required
+        />
+        <button type="submit" disabled={saving}>{saving ? "Saving..." : "Save"}</button>
+        <button type="button" disabled={saving} onClick={() => { setEditing(""); setFieldPassword(""); setError(""); }}>Cancel</button>
+      </form> : <div className="account-setting-row">
+        <input id={`account-${field.key}`} className="account-setting-value" type="text" value={field.current} readOnly />
+        <button type="button" disabled={field.key === "email" && !email} onClick={() => startEditing(field.key, field.current === "Loading..." ? "" : field.current)}>Change</button>
+      </div>}
+    </div>)}
+    <div className="account-setting">
+      <label htmlFor="account-password">Password</label>
+      {changingPassword ? <form className="account-password-form" onSubmit={changePassword}>
+        <label>Current password<input type="password" value={passwordCurrent} onChange={(event) => setPasswordCurrent(event.target.value)} autoComplete="current-password" required /></label>
+        <label>New password<input type="password" value={passwordNext} onChange={(event) => setPasswordNext(event.target.value)} minLength={8} autoComplete="new-password" required /></label>
+        <label>Confirm new password<input type="password" value={passwordConfirm} onChange={(event) => setPasswordConfirm(event.target.value)} minLength={8} autoComplete="new-password" required /></label>
+        <button type="submit" disabled={saving}>{saving ? "Saving..." : "Save"}</button>
+        <button type="button" disabled={saving} onClick={() => { setChangingPassword(false); setPasswordCurrent(""); setPasswordNext(""); setPasswordConfirm(""); setError(""); }}>Cancel</button>
+      </form> : <div className="account-setting-row">
+        <button type="button" onClick={() => { setChangingPassword(true); setError(""); }}>Change</button>
+      </div>}
     </div>
+    {error && <p role="alert">{error}</p>}
+    <button type="button" onClick={onLogout}>Log out</button>
+  </div>;
+}
+
+function FriendsPage({ user, friends, setFriends, friendRequests, setFriendRequests, onViewProfile }) {
+  const [handle, setHandle] = useState("");
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [friendsLoading, setFriendsLoading] = useState(false);
+  const [friendsError, setFriendsError] = useState("");
+  const [requestError, setRequestError] = useState("");
+  const [requestBusyId, setRequestBusyId] = useState(null);
+
+  useEffect(() => {
+    if (!user) return undefined;
+    let active = true;
+    setFriendsLoading(true);
+    setFriendsError("");
+    Promise.all([
+      fetch("/api/friends").then(readJson),
+      fetch("/api/friend-requests").then(readJson),
+    ]).then(([loadedFriends, requests]) => {
+      if (active) {
+        setFriends(loadedFriends);
+        setFriendRequests(requests);
+      }
+    }).catch((failure) => {
+      if (active) setFriendsError(failure.message);
+    }).finally(() => {
+      if (active) setFriendsLoading(false);
+    });
+    return () => { active = false; };
+  }, [user?.id, setFriends]);
+
+  async function refreshRelations() {
+    const [loadedFriends, requests] = await Promise.all([
+      fetch("/api/friends").then(readJson),
+      fetch("/api/friend-requests").then(readJson),
+    ]);
+    setFriends(loadedFriends);
+    setFriendRequests(requests);
+  }
+
+  async function respondToRequest(requestId, action) {
+    setRequestBusyId(requestId);
+    setRequestError("");
+    try {
+      await readJson(await fetch(`/api/friend-requests/${requestId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      }));
+      await refreshRelations();
+    } catch (failure) {
+      setRequestError(failure.message);
+    } finally {
+      setRequestBusyId(null);
+    }
+  }
+
+  async function cancelRequest(requestId) {
+    setRequestBusyId(requestId);
+    setRequestError("");
+    try {
+      await readJson(await fetch(`/api/friend-requests/${requestId}`, { method: "DELETE" }));
+      await refreshRelations();
+    } catch (failure) {
+      setRequestError(failure.message);
+    } finally {
+      setRequestBusyId(null);
+    }
+  }
+
+  async function search(event) {
+    event.preventDefault();
+    setSearching(true);
+    setResult(null);
+    setError("");
+    try {
+      const person = await readJson(await fetch(`/api/users/search?handle=${encodeURIComponent(handle.trim())}`));
+      setResult(person);
+    } catch (failure) {
+      setError(failure.message);
+    } finally {
+      setSearching(false);
+    }
+  }
+
+  return <section className="page friends-page">
+    <h2>Friends</h2>
+    <form className="friends-search-form" onSubmit={search}>
+      <input
+        value={handle}
+        onChange={(event) => setHandle(event.target.value)}
+        placeholder="username/1234"
+        aria-label="Search by username and identifier"
+        maxLength={40}
+        required
+      />
+      <button type="submit" disabled={searching}>{searching ? "Searching..." : "Search"}</button>
+    </form>
+    {error && <p role="alert">{error}</p>}
+    {result && <div className="friends-search-result">
+      <span>{result.display_name || "Crypt User"} · {result.username}/{String(result.identifier).padStart(4, "0")}</span>
+      <button type="button" onClick={() => onViewProfile(result)}>View</button>
+    </div>}
+    {!user && <p role="alert">Log in to search for users.</p>}
+    {user && friendRequests.incoming.length > 0 && <div className="friends-request-list">
+      <h3>Incoming Requests</h3>
+      {friendRequests.incoming.map((item) => <div className="friends-request-row" key={item.id}>
+        <span>{item.user.display_name || "Crypt User"}<small>{item.user.username}/{String(item.user.identifier).padStart(4, "0")}</small></span>
+        <button type="button" disabled={requestBusyId === item.id} onClick={() => respondToRequest(item.id, "accept")}>Accept</button>
+        <button type="button" disabled={requestBusyId === item.id} onClick={() => respondToRequest(item.id, "decline")}>Decline</button>
+      </div>)}
+    </div>}
+    {user && <div className="friends-directory">
+      <h3>Friends</h3>
+      {friendsError && <p role="alert">{friendsError}</p>}
+      {friendsLoading ? <p>Loading friends...</p> : friends.length === 0 ? <p>No friends yet.</p> : friends.map((friend) => <div className="friends-directory-row" key={friend.id}>
+        <Avatar profilePicture={friend.profile_picture} />
+        <span>{friend.display_name || "Crypt User"}<small>{friend.username}/{String(friend.identifier).padStart(4, "0")}</small></span>
+        <button type="button" onClick={() => onViewProfile(friend)}>View</button>
+      </div>)}
+    </div>}
+    {user && friendRequests.outgoing.length > 0 && <div className="friends-request-list friends-pending-list">
+      <h3>Pending Requests</h3>
+      {friendRequests.outgoing.map((item) => <div className="friends-request-row" key={item.id}>
+        <span>{item.user.display_name || "Crypt User"}<small>{item.user.username}/{String(item.user.identifier).padStart(4, "0")}</small></span>
+        <button type="button" disabled={requestBusyId === item.id} onClick={() => cancelRequest(item.id)}>Cancel</button>
+      </div>)}
+    </div>}
+    {requestError && <p role="alert">{requestError}</p>}
   </section>;
 }
 
 function Home() {
   return <>
-    <h1>CRYPT</h1>
     <p>Secure connections are our priority</p>
     <div className="home-buttons">
       <a href="#/login">Login</a>
