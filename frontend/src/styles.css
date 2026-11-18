@@ -59,6 +59,9 @@ nav button {
 }
 
 .app > header {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
   flex: 0 0 auto;
   margin: 0;
   color: #fff;
@@ -69,6 +72,106 @@ nav button {
 
 .app > header nav a {
   color: #fff;
+}
+
+.app-brand {
+  flex: 0 0 auto;
+  color: #fff;
+  text-decoration: none;
+}
+
+.app-brand h1 {
+  margin: 0;
+}
+
+.app > header .icon-nav {
+  flex: 1 1 auto;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.icon-nav a {
+  display: grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.icon-nav a:hover,
+.icon-nav a:focus-visible {
+  background: #241020;
+  border-color: #ff00aa;
+  outline: none;
+}
+
+.icon-nav img {
+  width: 1.8rem;
+  height: 1.8rem;
+  filter: brightness(0) invert(1);
+}
+
+.account-nav {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.account-nav a {
+  color: #fff;
+}
+
+.account-nav button {
+  padding: 0.45rem 0.7rem;
+  color: #fff;
+  background: transparent;
+  border: 1px solid #ff00aa;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.account-nav button:hover {
+  background: #ff00aa;
+}
+
+.account-nav .header-profile-button {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  place-items: center;
+  padding: 0;
+  overflow: hidden;
+  background: transparent;
+  border: 1px solid #ff00aa;
+  border-radius: 50%;
+}
+
+.account-nav .header-profile-button:hover {
+  background: #241020;
+  box-shadow: 0 0 0 2px rgb(255 0 170 / 30%);
+}
+
+.account-nav .header-profile-avatar {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #252525;
+  border: 0;
+  border-radius: 50%;
+}
+
+@media (max-width: 520px) {
+  .app > header { gap: 0.65rem; }
+  .app > header h1 { font-size: 1.35rem; }
+  .app > header .icon-nav { justify-content: flex-start; gap: 0.2rem; }
+  .icon-nav a { width: 2.3rem; height: 2.3rem; }
+  .icon-nav img { width: 1.5rem; height: 1.5rem; }
+  .account-nav { gap: 0.35rem; }
+  .account-nav button { padding: 0.35rem 0.45rem; }
 }
 
 .app > main {
@@ -104,6 +207,200 @@ label {
   font-size: 1rem;
 }
 
+.account-setting {
+  margin: 1.25rem 0;
+}
+
+.account-setting > label {
+  margin: 0 0 0.35rem;
+  color: #293241;
+  font-weight: 600;
+}
+
+.account-setting-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.account-setting-row input {
+  flex: 0 1 360px;
+  width: 100%;
+  max-width: 360px;
+  min-width: 0;
+  padding: 0.6rem 0.75rem;
+  margin: 0;
+  border: 1px solid #d7dbe0;
+  border-radius: 6px;
+  background: #fff;
+  font: inherit;
+}
+
+.account-setting-row input:focus-visible {
+  border-color: #ff00aa;
+  outline: 2px solid #ff00aa;
+  outline-offset: 1px;
+}
+
+.account-setting-row button {
+  flex: 0 0 auto;
+  padding: 0.6rem 0.9rem;
+  color: #fff;
+  background: #ff00aa;
+  border: 0;
+  border-radius: 6px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.account-setting-row button:hover:not(:disabled) {
+  background: #e60099;
+}
+
+.account-setting-row button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.friends-search-form,
+.friends-search-result {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  max-width: 520px;
+}
+
+.friends-search-form input {
+  flex: 1 1 auto;
+  max-width: none;
+  margin: 0;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #d7dbe0;
+  border-radius: 6px;
+}
+
+.friends-search-form button,
+.friends-search-result button {
+  flex: 0 0 auto;
+  padding: 0.6rem 0.9rem;
+  color: #fff;
+  background: #ff00aa;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.friends-search-form button:hover:not(:disabled),
+.friends-search-result button:hover {
+  background: #e60099;
+}
+
+.friends-directory {
+  max-width: 520px;
+  margin-top: 1.75rem;
+}
+
+.friends-directory h3 {
+  margin-bottom: 0.75rem;
+}
+
+.friends-directory-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.5rem 0;
+  padding: 0.65rem;
+  background: #f8fafc;
+  border: 1px solid #e2e6ec;
+  border-radius: 6px;
+}
+
+.friends-directory-row > span {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.friends-directory-row small {
+  display: block;
+  color: #697386;
+}
+
+.friends-directory-row button {
+  flex: 0 0 auto;
+  padding: 0.5rem 0.8rem;
+  color: #fff;
+  background: #ff00aa;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.friends-directory-row button:hover {
+  background: #e60099;
+}
+
+.friends-request-list {
+  max-width: 520px;
+  margin-top: 1.5rem;
+}
+
+.friends-request-list h3 {
+  margin-bottom: 0.75rem;
+}
+
+.friends-request-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+  padding: 0.65rem;
+  background: #f8fafc;
+  border: 1px solid #e2e6ec;
+  border-radius: 6px;
+}
+
+.friends-request-row > span {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.friends-request-row small {
+  display: block;
+  color: #697386;
+}
+
+.friends-request-row button {
+  flex: 0 0 auto;
+  padding: 0.45rem 0.7rem;
+  color: #fff;
+  background: #ff00aa;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.friends-request-row button:hover:not(:disabled) {
+  background: #e60099;
+}
+
+.friends-request-row button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.friends-pending-list {
+  margin-top: 2rem;
+}
+
+.friends-search-result {
+  justify-content: space-between;
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: #f8fafc;
+  border: 1px solid #e2e6ec;
+  border-radius: 6px;
+}
+
 input {
   display: block;
   width: 100%;
@@ -113,7 +410,6 @@ input {
   padding: 0.5rem;
 }
 
-/*Crypt Home Page */
 .home-page{ 
   height: 100%;
   box-sizing: border-box;
@@ -122,37 +418,36 @@ input {
   justify-content: center;
   align-items: center;
   text-align: center;
-  background: #000;
+  background: #000 url("../assets/background.jpg") center center / cover no-repeat;
   color: #fff;
   border-radius: 0;
   padding: 1.5rem;
   box-sizing: border-box;
 }
 
-.home-page h1{
-  font-size: 5rem;
-  letter-spacing: 5px;
-  margin: 0 0 10px;
-}
-
 .home-page p {
-  color: #aaa;
-  font-size: 1rem;
-  margin-bottom: 2.5rem;
+  margin: 0 0 1.25rem;
+  color: #fff;
+  font-size: 1.15rem;
+  font-weight: 600;
+  text-shadow: 0 2px 5px #000, 0 0 12px #000;
 }
 
 .home-buttons {
   display: flex;
-  gap: 2rem;
+  gap: 1rem;
   justify-content: center;
   flex-wrap: wrap;
 }
 
 .home-buttons a {
-  padding: 10px 28px;
+  min-width: 6rem;
+  padding: 0.75rem 1.25rem;
+  background: rgb(0 0 0 / 72%);
   border: 1.5px solid #ff00aa;
   border-radius: 8px;
   color: white;
+  font-weight: 700;
   text-decoration: none;
   transition: all 0.25s ease;
 }
@@ -163,8 +458,6 @@ input {
   transform: translateY(-3px);
 }
 
-
-/*Crypt Messaging Page */
 
 .messages-page {
   display: flex;
@@ -526,6 +819,49 @@ input {
   border-radius: 50%;
 }
 
+.profile-avatar-wrap {
+  position: relative;
+  width: 112px;
+  height: 112px;
+  margin-bottom: 1.25rem;
+}
+
+.profile-avatar-wrap .profile-picture {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+.profile-friend-request-icon {
+  position: absolute;
+  top: -0.35rem;
+  right: -0.35rem;
+  display: grid;
+  width: 2.6rem;
+  height: 2.6rem;
+  place-items: center;
+  padding: 0;
+  background: #7b2cbf;
+  border: 2px solid #151515;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.profile-friend-request-icon:hover:not(:disabled) {
+  background: #6d28a8;
+}
+
+.profile-friend-request-icon:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.profile-friend-request-icon img {
+  width: 1.7rem;
+  height: 1.7rem;
+  filter: brightness(0) invert(1);
+}
+
 .profile-dialog h2 {
   margin: 0;
   overflow-wrap: anywhere;
@@ -543,10 +879,17 @@ input {
 .profile-remove-picture {
   padding: 0.5rem 0.8rem;
   color: #fff;
-  background: #315f9c;
+  background: #ff00aa;
   border: 0;
   border-radius: 6px;
   cursor: pointer;
+}
+
+.profile-settings-button:hover,
+.profile-edit-actions button:hover,
+.profile-remove-picture:hover,
+.profile-comment-form button:hover:not(:disabled) {
+  background: #e60099;
 }
 
 .profile-comments-arrow {
@@ -648,7 +991,7 @@ input {
   align-self: flex-end;
   padding: 0.5rem 0.8rem;
   color: #fff;
-  background: #315f9c;
+  background: #ff00aa;
   border: 0;
   border-radius: 6px;
   cursor: pointer;
@@ -700,7 +1043,7 @@ input {
   flex: 0 0 auto;
   padding: 0.2rem 0.45rem;
   color: #fff;
-  background: #694040;
+  background: #b00078;
   border: 0;
   border-radius: 4px;
   cursor: pointer;
@@ -773,9 +1116,16 @@ input {
   border-radius: 5px;
 }
 
+.profile-edit-form input:focus-visible,
+.profile-edit-form textarea:focus-visible,
+.profile-comment-form input:focus-visible {
+  border-color: #ff00aa;
+  outline: 2px solid #ff00aa;
+  outline-offset: 1px;
+}
+
 .profile-remove-picture {
   margin-top: 0.2rem;
-  background: #444;
 }
 
 .profile-edit-actions {
@@ -844,6 +1194,7 @@ input {
 
 .profile-close {
   position: absolute;
+  z-index: 5;
   top: 0.65rem;
   right: 0.75rem;
   width: 2rem;
@@ -859,6 +1210,77 @@ input {
 
 .profile-close:hover {
   background: #303030;
+}
+
+html[data-theme="light"] body,
+html[data-theme="light"] .app {
+  color: #222;
+  background: #f5f5f5;
+}
+
+html[data-theme="light"] .app > header {
+  color: #222;
+  background: #fff;
+  border-bottom: 1px solid #ddd;
+}
+
+html[data-theme="light"] .app-brand,
+html[data-theme="light"] .app > header nav a,
+html[data-theme="light"] .account-nav a {
+  color: #222;
+}
+
+html[data-theme="light"] .icon-nav img {
+  filter: none;
+}
+
+html[data-theme="light"] .icon-nav a:hover,
+html[data-theme="light"] .icon-nav a:focus-visible {
+  background: #fff0fa;
+}
+
+html[data-theme="light"] .account-nav .header-profile-button:hover {
+  background: #fff0fa;
+}
+
+html[data-theme="light"] .app > main {
+  background: #f5f5f5;
+}
+
+html[data-theme="light"] .messages-page {
+  color: #222;
+  background: #f5f5f5;
+}
+
+html[data-theme="light"] .profile-dialog {
+  color: #222;
+  background: #fff;
+  border-color: #ddd;
+}
+
+html[data-theme="light"] .profile-comments-side {
+  background: #f3f4f6;
+}
+
+html[data-theme="light"] .profile-comments-view,
+html[data-theme="light"] .profile-comment,
+html[data-theme="light"] .profile-comment strong,
+html[data-theme="light"] .profile-comment > span {
+  color: #222;
+}
+
+html[data-theme="light"] .profile-comment time,
+html[data-theme="light"] .profile-bio,
+html[data-theme="light"] .profile-handle {
+  color: #596273;
+}
+
+html[data-theme="light"] .profile-comments-arrow {
+  color: #333;
+}
+
+html[data-theme="light"] .profile-comments-arrow:hover {
+  background: #e5e7eb;
 }
 
 @media (max-width: 600px) {
@@ -880,10 +1302,20 @@ input {
     padding: 1rem 1rem 1.2rem;
   }
 
-  .profile-dialog-comments .profile-summary .profile-picture {
+  .profile-dialog-comments .profile-summary .profile-avatar-wrap {
     width: 72px;
     height: 72px;
     margin-bottom: 0.6rem;
+  }
+
+  .profile-dialog-comments .profile-summary .profile-friend-request-icon {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  .profile-dialog-comments .profile-summary .profile-friend-request-icon img {
+    width: 1.3rem;
+    height: 1.3rem;
   }
 
   .profile-dialog-comments .profile-summary .profile-bio {
@@ -903,8 +1335,6 @@ input {
     max-width: 90%;
   }
 }
-
-/* Login Page */
 
 .login-page {
   height: 100%;
@@ -945,8 +1375,6 @@ input {
 }
 
 
-/* Register Page */
-
 .register-page {
   height: 100%;
   display: flex;
@@ -961,8 +1389,6 @@ input {
 .register-page .login-box {
   margin: auto;
 }
-
-/* Message Image Form */
 
 .message-image {
   display: block;

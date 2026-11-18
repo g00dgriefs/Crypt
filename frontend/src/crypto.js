@@ -34,6 +34,64 @@ function storageName(userId) {
   return `crypt-device-key-${userId}`;
 }
 
+/** Re-encrypt the saved device key bundle under a new account password. */
+export async function rewrapDeviceKeyBackup(userId, currentPassword, newPassword) {
+  await sodium.ready;
+  let savedValue = localStorage.getItem(storageName(userId));
+  if (!savedValue) {
+    const response = await fetch("/api/device-key-backup");
+    if (response.status === 404) return null;
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(body.error || "Could not load the encrypted device key.");
+    savedValue = JSON.stringify(body.backup);
+  }
+
+  const saved = JSON.parse(savedValue);
+  const oldKey = await wrappingKey(
+    currentPassword,
+    fromBase64(saved.salt),
+    saved.opslimit,
+    saved.memlimit
+  );
+  let privateKey;
+  try {
+    privateKey = sodium.crypto_secretbox_open_easy(
+      fromBase64(saved.encrypted_private_key),
+      fromBase64(saved.nonce),
+      oldKey
+    );
+  } catch {
+    throw new Error("Current password could not unlock the device encryption key.");
+  } finally {
+    sodium.memzero(oldKey);
+  }
+
+  const salt = sodium.randombytes_buf(sodium.crypto_pwhash_SALTBYTES);
+  const nonce = sodium.randombytes_buf(sodium.crypto_secretbox_NONCEBYTES);
+  const opslimit = sodium.crypto_pwhash_OPSLIMIT_INTERACTIVE;
+  const memlimit = sodium.crypto_pwhash_MEMLIMIT_INTERACTIVE;
+  const newKey = await wrappingKey(newPassword, salt, opslimit, memlimit);
+  let encryptedPrivateKey;
+  try {
+    encryptedPrivateKey = sodium.crypto_secretbox_easy(privateKey, nonce, newKey);
+  } finally {
+    sodium.memzero(newKey);
+    sodium.memzero(privateKey);
+  }
+
+  return {
+    backup: {
+      ...saved,
+      opslimit,
+      memlimit,
+      salt: toBase64(salt),
+      nonce: toBase64(nonce),
+      encrypted_private_key: toBase64(encryptedPrivateKey),
+    },
+    storageKey: storageName(userId),
+  };
+}
+
 /** Generate or unlock this account's keypair. The private key is wrapped with
  * the account password and stored locally; only that encrypted bundle and the
  * public key are synced to the server. The password and plaintext private key
@@ -184,7 +242,6 @@ export async function encryptText(plaintext, recipientPublicKey, senderPrivateKe
 export async function encryptImage(file, recipientPublicKey, senderPrivateKey) {
   await sodium.ready;
 
-  // Reads the image as binary data
   const imageBytes = new Uint8Array(await file.arrayBuffer());
 
   // Includes the image type so the recipient knows how to display it
@@ -197,7 +254,6 @@ export async function encryptImage(file, recipientPublicKey, senderPrivateKey) {
   plaintext.set(mimeBytes, 0);
   plaintext.set(imageBytes, mimeBytes.length + 1);
 
-  // Encrypts it for both sender and recipient
   const senderPublicKey = sodium.crypto_scalarmult_base(senderPrivateKey);
 
   const recipientCopy = encryptBoxPayload(

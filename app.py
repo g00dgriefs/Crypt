@@ -37,6 +37,10 @@ def create_app(config_object=None):
     def frontend_css(filename):
         return send_from_directory("frontend/src", filename)
 
+    @app.get("/assets/<path:filename>")
+    def frontend_asset(filename):
+        return send_from_directory("frontend/assets", filename)
+
     @app.get("/")
     def home():
         return render_template("home.html")

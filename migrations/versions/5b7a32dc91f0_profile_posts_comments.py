@@ -1,4 +1,4 @@
-"""Add profile posts and comments
+"""profile posts and comments
 
 Revision ID: 5b7a32dc91f0
 Revises: f27b90e6c143
