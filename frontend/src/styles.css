@@ -315,7 +315,7 @@ label {
   border-radius: 6px;
 }
 
-.friends-directory-row > span {
+.friends-directory-row > span:not(.friend-avatar) {
   flex: 1 1 auto;
   min-width: 0;
 }
