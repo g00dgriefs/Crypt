@@ -52,6 +52,8 @@ The main objectives of Crypt are:
 
    Extract the ZIP file and open the Crypt project folder in Visual Studio Code
 
+   If you're using git open your visual studio code navigate to the terminal and run - "git clone https://github.com/g00dgriefs/Crypt.git" then navigate to the project directory using - "cd Crypt"
+
    Step 2 - Setup Python Environment
 
     Create Python Virtual Environment - Put this in your visual studio code terminal "python -m venv .venv"
