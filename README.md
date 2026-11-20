@@ -46,10 +46,34 @@ The main objectives of Crypt are:
 
 6. Installation Instructions 
 
+   Step 1 - Download the Project
+
+   Download the Crypt project from the GitHub repository by selecting Code → Download ZIP.
+
+   Extract the ZIP file and open the Crypt project folder in Visual Studio Code
+
+   Step 2 - Setup Python Environment
+
+    Create Python Virtual Environment - Put this in your visual studio code terminal "python -m venv .venv"
+
+    Active the Virtual Environment -
+          MAC OS - source .venv/bin/activate
+          Windows - .venv\Scripts\activate
 
 
+    Step 3 - Install Backend Dependencies
 
-7. Backend Dependencies
+     With your Virtual Environment Activated, Run - "pip install -r requirements.txt" In your terminal
+
+
+    Step 4 - Install Frontend Dependencies
+
+     Navigate to the frontend directory using - "cd frontend"
+
+     Install the require packages using - "npm install"
+
+
+8. Backend Dependencies
    * Flask
    * Flask-CORS
    * Flask-JWT-Extended
@@ -60,7 +84,7 @@ The main objectives of Crypt are:
    * Python-dotenv
 
 
-8. Running the Application 
+9. Running the Application 
 
    Starting the Flask Backend - Open the main Crypt Project Terminal
 
@@ -75,7 +99,18 @@ The main objectives of Crypt are:
 
    Start the Development Server - "npm run dev"
 
-   Once both the frontend and backend are running open the local frontend address displayed by Vite on your chosen browser 
+   Once both the frontend and backend are running open the local frontend address displayed by Vite on your browser (Chrome or Firefox)
+
+
+10. Security and Encryption
+    Crypt uses Libsodium through PyNaCI and Javascript Cryptographic Libraries to implement encryption functionality
+   this ensures messages are encrypted on the senders device before being transmitted to the backend, the intended
+   users then uses their private encryption key to then decrypt the encrypted messages on their device.
+
+11. Known Limitations
+
+    * Current Image Attachment Size Restrictions (150KB)
+    * Some Browsers are incompatible 
 
    
 
