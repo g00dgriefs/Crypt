@@ -23,13 +23,22 @@ def upgrade():
         'UPDATE "user" SET profile_comment_visibility = '
         "CASE WHEN allow_profile_comments THEN 'everybody' ELSE 'nobody' END"
     )
-    op.alter_column(
-        "user",
-        "profile_comment_visibility",
-        nullable=False,
-        server_default="everybody",
-    )
-    op.drop_column("user", "allow_profile_comments")
+    with op.batch_alter_table("user") as batch_op:
+        batch_op.alter_column(
+            "profile_comment_visibility",
+            existing_type=sa.String(length=16),
+            existing_nullable=True,
+            nullable=False,
+            server_default="everybody",
+        )
+        batch_op.drop_column("allow_profile_comments")
+    if op.get_bind().dialect.name == "sqlite":
+        op.create_index(
+            "uq_user_username_identifier",
+            "user",
+            [sa.text("lower(username)"), "identifier"],
+            unique=True,
+        )
 
 
 def downgrade():
@@ -41,10 +50,19 @@ def downgrade():
         'UPDATE "user" SET allow_profile_comments = '
         "CASE WHEN profile_comment_visibility = 'nobody' THEN FALSE ELSE TRUE END"
     )
-    op.alter_column(
-        "user",
-        "allow_profile_comments",
-        nullable=False,
-        server_default=sa.true(),
-    )
-    op.drop_column("user", "profile_comment_visibility")
+    with op.batch_alter_table("user") as batch_op:
+        batch_op.alter_column(
+            "allow_profile_comments",
+            existing_type=sa.Boolean(),
+            existing_nullable=True,
+            nullable=False,
+            server_default=sa.true(),
+        )
+        batch_op.drop_column("profile_comment_visibility")
+    if op.get_bind().dialect.name == "sqlite":
+        op.create_index(
+            "uq_user_username_identifier",
+            "user",
+            [sa.text("lower(username)"), "identifier"],
+            unique=True,
+        )

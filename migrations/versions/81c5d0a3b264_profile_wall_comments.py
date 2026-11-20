@@ -21,21 +21,37 @@ def upgrade():
         "SET profile_id = profile_post.author_id "
         "FROM profile_post WHERE profile_post.id = comment.post_id"
     )
-    op.create_foreign_key(
-        "fk_profile_comment_profile_id_user",
-        "profile_comment",
-        "user",
-        ["profile_id"],
-        ["id"],
-    )
-    op.alter_column("profile_comment", "profile_id", nullable=False)
-    op.alter_column("profile_comment", "post_id", nullable=True)
+    with op.batch_alter_table("profile_comment") as batch_op:
+        batch_op.create_foreign_key(
+            "fk_profile_comment_profile_id_user",
+            "user",
+            ["profile_id"],
+            ["id"],
+        )
+        batch_op.alter_column(
+            "profile_id",
+            existing_type=sa.Integer(),
+            existing_nullable=True,
+            nullable=False,
+        )
+        batch_op.alter_column(
+            "post_id",
+            existing_type=sa.Integer(),
+            existing_nullable=False,
+            nullable=True,
+        )
     op.create_index("ix_profile_comment_profile_id", "profile_comment", ["profile_id"])
 
 
 def downgrade():
     op.execute("DELETE FROM profile_comment WHERE post_id IS NULL")
     op.drop_index("ix_profile_comment_profile_id", table_name="profile_comment")
-    op.drop_constraint("fk_profile_comment_profile_id_user", "profile_comment", type_="foreignkey")
-    op.drop_column("profile_comment", "profile_id")
-    op.alter_column("profile_comment", "post_id", nullable=False)
+    with op.batch_alter_table("profile_comment") as batch_op:
+        batch_op.drop_constraint("fk_profile_comment_profile_id_user", type_="foreignkey")
+        batch_op.drop_column("profile_id")
+        batch_op.alter_column(
+            "post_id",
+            existing_type=sa.Integer(),
+            existing_nullable=True,
+            nullable=False,
+        )

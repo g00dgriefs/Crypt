@@ -43,8 +43,20 @@ def upgrade():
             user_table.update().where(user_table.c.id == user_id).values(identifier=identifier)
         )
 
-    op.alter_column("user", "identifier", nullable=False)
-    op.alter_column("user", "display_name", server_default=None)
+    with op.batch_alter_table("user") as batch_op:
+        batch_op.alter_column(
+            "identifier",
+            existing_type=sa.Integer(),
+            existing_nullable=True,
+            nullable=False,
+        )
+        batch_op.alter_column(
+            "display_name",
+            existing_type=sa.String(length=32),
+            existing_nullable=False,
+            existing_server_default="Crypt User",
+            server_default=None,
+        )
     op.drop_index("ix_user_username", table_name="user")
     op.create_index("ix_user_username", "user", ["username"], unique=False)
     op.create_index(
