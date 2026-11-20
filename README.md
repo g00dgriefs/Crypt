@@ -43,5 +43,42 @@ The main objectives of Crypt are:
   * Node.js & npm
   * PostgreSQL
     
-    
+
+6. Installation Instructions 
+
+
+
+
+7. Backend Dependencies
+   * Flask
+   * Flask-CORS
+   * Flask-JWT-Extended
+   * Flask-Migrate
+   * Flask-SQLAlchemy
+   * PyNaCI
+   * Psycopg(binary)
+   * Python-dotenv
+
+
+8. Running the Application 
+
+   Starting the Flask Backend - Open the main Crypt Project Terminal
+
+   Activate the Python Virtual Environment: "source .venv/bin/activate"
+
+   Start the Backend: "python app.py"
+
+
+   Starting the React Frontend - Open a secondary Terminal 
+   
+   move to the frontend directory - "cd frontend"
+
+   Start the Development Server - "npm run dev"
+
+   Once both the frontend and backend are running open the local frontend address displayed by Vite on your chosen browser 
+
+   
+
+
+
  
