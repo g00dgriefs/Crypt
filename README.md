@@ -33,7 +33,7 @@ The main objectives of Crypt are:
   * Flask - Backend Framework and API
   * PostgreSQL - Database management
   * SQLAlchemy - Database Interaction
-  * Libsodium - Encryption and Cryptographic operations (Flask-CORS & PyNaCI)
+  * Libsodium - Encryption and Cryptographic operations (Flask-CORS & PyNaCl)
   * HTML & CSS - Application Structure and Styling
 
 
